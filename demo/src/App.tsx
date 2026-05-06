@@ -147,7 +147,7 @@ function App() {
 
 			{/* ─── Demo 3: List with dummyLength ─── */}
 			<div className="demo-section">
-				<h2>Fruit List (dummyLength=5)</h2>
+				<h2>Fruit List (dummyLength=15)</h2>
 				<div className="list-demo">
 					<Shimmer
 						loading={loading}
@@ -156,30 +156,17 @@ function App() {
 						highlightColor="#2d2d52"
 						dummyLength={15}
 					>
-						{(loading && fruits.length === 0 ? ["Dummy"] : fruits).map(
-							(fruit, index) => (
-								<div className="list-item" key={index}>
-									<div className="list-item-icon">🍎</div>
-									<div className="list-item-content">
-										<h4>{fruit}</h4>
-										<p>A delicious fruit</p>
-									</div>
-									<span className="list-item-badge">Fresh</span>
+						{/* The Actual Data (Used only when loading is false) */}
+						{fruits.map((fruit, i) => (
+							<div className="list-item" key={i}>
+								<div className="list-item-icon">🍎</div>
+								<div className="list-item-content">
+									<h4>{fruit}</h4>
+									<p>A delicious fruit</p>
 								</div>
-							),
-						)}
-						{/* {!loading &&
-							fruits.length !== 0 &&
-							fruits.map((fruit, index) => (
-								<div className="list-item" key={index}>
-									<div className="list-item-icon">🍎</div>
-									<div className="list-item-content">
-										<h4>{fruit}</h4>
-										<p>A delicious fruit</p>
-									</div>
-									<span className="list-item-badge">Fresh</span>
-								</div>
-							))} */}
+								<span className="list-item-badge">Fresh</span>
+							</div>
+						))}
 					</Shimmer>
 				</div>
 			</div>

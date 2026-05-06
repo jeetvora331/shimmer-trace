@@ -35,7 +35,15 @@ export interface ShimmerProps extends ShimmerConfig {
   loading?: boolean;
   /** The children to trace and render shimmer over. */
   children: ReactNode;
-  /** Number of placeholder clones to generate for list-like loading states. */
+  /**
+   * Number of placeholder clones to generate for list-like loading states.
+   *
+   * When `loading=true` and `dummyLength` is set, Shimmer grabs the first
+   * available child (or a cached template from the last loaded render) and
+   * clones it `dummyLength` times to produce skeleton placeholders.
+   *
+   * When `loading=false`, children are rendered as-is.
+   */
   dummyLength?: number;
   /** Force this Shimmer to be a Master renderer even if nested inside another Shimmer. */
   stopPropagation?: boolean;

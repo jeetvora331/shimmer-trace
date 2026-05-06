@@ -22,16 +22,29 @@ import { generateShimmerKey } from './utils';
  *   DOM elements, and renders a single animated overlay with an SVG mask.
  * - **Reporter**: Measures its own rect and reports it to the parent Master.
  *
- * @example
+ * ### List Mode (dummyLength)
+ *
+ * When `dummyLength` is set, Shimmer enters list mode:
+ *
+ * - `loading=true` → Takes the first child element (or a cached template
+ *   from the previous loaded render) and clones it `dummyLength` times.
+ *   The clones are rendered hidden and traced for the shimmer overlay.
+ * - `loading=false` → Renders children as-is (your `.map()` output).
+ *
+ * This means you write your list rendering naturally:
  * ```tsx
- * <Shimmer loading={isLoading}>
- *   <Card>
- *     <img src="..." />
- *     <h2>Title</h2>
- *     <p>Description</p>
- *   </Card>
+ * <Shimmer loading={loading} dummyLength={15}>
+ *   {fruits.map((fruit, i) => (
+ *     <div className="list-item" key={i}>
+ *       <h4>{fruit}</h4>
+ *     </div>
+ *   ))}
  * </Shimmer>
  * ```
+ *
+ * The library caches the structure of your list items from the last loaded
+ * render, so even when `fruits` is empty during loading, the shimmer
+ * skeletons match the real layout perfectly.
  */
 export function Shimmer({
   loading = false,
@@ -104,6 +117,9 @@ function MasterShimmer({
 }: MasterShimmerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Cache the first child element for use as a template during future loading states
+  const templateCacheRef = useRef<React.ReactElement | null>(null);
+
   // Registry for Reporter children to bubble up their rects
   const [reporterRects, setReporterRects] = useState<
     Record<string, ShimmerRect[]>
@@ -135,33 +151,14 @@ function MasterShimmer({
     return [...tracedRects, ...reported];
   }, [tracedRects, reporterRects]);
 
-  // Build the content to render (handles dummyLength cloning)
-  const renderedChildren = useMemo(() => {
-    if (!loading || !dummyLength || dummyLength <= 0) return children;
-
-    const childArray = React.Children.toArray(children);
-
-    // If we have children, use the first one as template and clone it
-    if (childArray.length > 0) {
-      const template = childArray[0];
-      if (!React.isValidElement(template)) return children;
-
-      return Array.from({ length: dummyLength }, (_, i) =>
-        React.cloneElement(template as React.ReactElement, {
-          key: generateShimmerKey(`${id}-${i}`),
-        }),
-      );
-    }
-
-    // No children (e.g., empty array from .map) → create placeholder divs
-    return Array.from({ length: dummyLength }, (_, i) => (
-      <div
-        key={generateShimmerKey(`${id}-placeholder-${i}`)}
-        style={{ width: '100%', height: '1.2em', marginBottom: '0.5em' }}
-        aria-hidden="true"
-      />
-    ));
-  }, [loading, dummyLength, children, id]);
+  // Build the content to render (handles dummyLength + template caching)
+  const renderedChildren = useListChildren({
+    loading,
+    children,
+    dummyLength,
+    id,
+    templateCacheRef,
+  });
 
   const contextValue = useMemo(
     () => ({
@@ -225,6 +222,9 @@ function ReporterShimmer({
 }: ReporterShimmerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Cache the first child element for use as a template during future loading states
+  const templateCacheRef = useRef<React.ReactElement | null>(null);
+
   // Trace this reporter's children
   const tracedRects = useTrace(
     containerRef,
@@ -260,28 +260,14 @@ function ReporterShimmer({
     };
   }, [tracedRects, parentContext, id]);
 
-  const renderedChildren = useMemo(() => {
-    if (!parentContext.loading || !dummyLength || dummyLength <= 0) return children;
-
-    const childArray = React.Children.toArray(children);
-    if (childArray.length > 0) {
-      const template = childArray[0];
-      if (!React.isValidElement(template)) return children;
-      return Array.from({ length: dummyLength }, (_, i) =>
-        React.cloneElement(template as React.ReactElement, {
-          key: generateShimmerKey(`${id}-reporter-${i}`),
-        }),
-      );
-    }
-
-    return Array.from({ length: dummyLength }, (_, i) => (
-      <div
-        key={generateShimmerKey(`${id}-reporter-placeholder-${i}`)}
-        style={{ width: '100%', height: '1.2em', marginBottom: '0.5em' }}
-        aria-hidden="true"
-      />
-    ));
-  }, [parentContext.loading, dummyLength, children, id]);
+  // Build the content to render (handles dummyLength + template caching)
+  const renderedChildren = useListChildren({
+    loading: parentContext.loading,
+    children,
+    dummyLength,
+    id,
+    templateCacheRef,
+  });
 
   return (
     <div ref={containerRef} data-shimmer-reporter>
@@ -289,5 +275,99 @@ function ReporterShimmer({
     </div>
   );
 };
+
+/* ─────────────── List Mode Hook ─────────────── */
+
+interface UseListChildrenParams {
+  loading: boolean;
+  children: React.ReactNode;
+  dummyLength?: number;
+  id: string;
+  templateCacheRef: React.MutableRefObject<React.ReactElement | null>;
+}
+
+/**
+ * Hook that handles template caching & cloning for list mode.
+ *
+ * **How it works:**
+ *
+ * 1. When `loading=false` and children are available, the first valid
+ *    ReactElement child is cached in `templateCacheRef` for future use.
+ *
+ * 2. When `loading=true` and `dummyLength` is set:
+ *    - If children exist (e.g., stale data still present), the first child
+ *      is used as the template and cloned `dummyLength` times.
+ *    - If children are empty (e.g., `[].map()` produces nothing), the
+ *      **cached template** from the last loaded render is used instead.
+ *    - If no cache exists yet (very first render), a set of generic
+ *      placeholder divs are rendered as a fallback.
+ *
+ * 3. When `dummyLength` is not set, children are returned as-is regardless
+ *    of loading state.
+ */
+function useListChildren({
+  loading,
+  children,
+  dummyLength,
+  id,
+  templateCacheRef,
+}: UseListChildrenParams): React.ReactNode {
+
+  // No list mode → just return children as-is
+  if (!dummyLength || dummyLength <= 0) {
+    // Still cache the first child for potential future list-mode usage
+    const childArray = React.Children.toArray(children);
+    if (childArray.length > 0 && React.isValidElement(childArray[0])) {
+      templateCacheRef.current = childArray[0] as React.ReactElement;
+    }
+    return children;
+  }
+
+  const childArray = React.Children.toArray(children);
+
+  // ── NOT LOADING: render children as-is, cache first child ──
+  if (!loading) {
+    if (childArray.length > 0 && React.isValidElement(childArray[0])) {
+      templateCacheRef.current = childArray[0] as React.ReactElement;
+    }
+    return children;
+  }
+
+  // ── LOADING + dummyLength: produce skeleton clones ──
+
+  // Strategy 1: Children exist → use the first child as the template
+  if (childArray.length > 0 && React.isValidElement(childArray[0])) {
+    const template = childArray[0] as React.ReactElement;
+    templateCacheRef.current = template;
+    return Array.from({ length: dummyLength }, (_, i) =>
+      React.cloneElement(template, {
+        key: generateShimmerKey(`${id}-clone-${i}`),
+      } as any),
+    );
+  }
+
+  // Strategy 2: No children, but we have a cached template from a previous render
+  if (templateCacheRef.current) {
+    const cached = templateCacheRef.current;
+    return Array.from({ length: dummyLength }, (_, i) =>
+      React.cloneElement(cached, {
+        key: generateShimmerKey(`${id}-cached-${i}`),
+      } as any),
+    );
+  }
+
+  // Strategy 3: No children AND no cache (very first render)
+  // Render generic placeholder blocks that the shimmer overlay will trace
+  return Array.from({ length: dummyLength }, (_, i) => (
+    <div
+      key={generateShimmerKey(`${id}-placeholder-${i}`)}
+      style={{
+        height: 56,
+        borderRadius: 8,
+        marginBottom: i < dummyLength - 1 ? 12 : 0,
+      }}
+    />
+  ));
+}
 
 // removed Shimmer.displayName
