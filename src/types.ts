@@ -1,4 +1,4 @@
-import { ReactNode, ReactElement } from 'react';
+import React, { ReactNode, ReactElement } from 'react';
 
 /**
  * Represents a measured rectangle of a traced DOM element,
@@ -47,6 +47,16 @@ export interface ShimmerProps extends ShimmerConfig {
   dummyLength?: number;
   /** Force this Shimmer to be a Master renderer even if nested inside another Shimmer. */
   stopPropagation?: boolean;
+  /**
+   * className applied to the Master container div.
+   * Use to control layout (e.g. display:flex) without losing position:relative.
+   */
+  className?: string;
+  /**
+   * Inline styles merged into the Master container div.
+   * position:relative is always applied; everything else is overridable.
+   */
+  style?: React.CSSProperties;
 }
 
 /** Default configuration values. */

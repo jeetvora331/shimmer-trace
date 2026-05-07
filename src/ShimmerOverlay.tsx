@@ -127,6 +127,9 @@ export const ShimmerOverlay: React.FC<ShimmerOverlayProps> = ({
         height: '100%',
         zIndex: 1,
         pointerEvents: 'none',
+        // Punch through the parent container's visibility:hidden so the
+        // shimmer overlay remains visible while children are hidden.
+        visibility: 'visible',
       }}
     >
       {rects.map((rect, i) => (

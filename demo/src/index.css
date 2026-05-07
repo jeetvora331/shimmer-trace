@@ -59,8 +59,13 @@ body {
   display: flex;
   gap: 1rem;
   justify-content: center;
-  margin-bottom: 2.5rem;
   flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-primary);
+  padding: 1rem 0;
+  margin-bottom: 1.5rem;
 }
 
 .controls button {
@@ -271,4 +276,89 @@ body {
   font-weight: 500;
   background: rgba(108, 99, 255, 0.15);
   color: var(--accent);
+}
+
+/* ─── Demo description ─── */
+.demo-description {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+
+.demo-description code {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.8rem;
+  color: var(--accent);
+  background: rgba(108, 99, 255, 0.1);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+}
+
+/* ─── Flex layout demo ─── */
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ─── Suspense demo ─── */
+.suspense-controls {
+  margin-bottom: 1rem;
+}
+
+.reload-btn {
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reload-btn:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.suspense-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.suspense-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.6rem;
+}
+
+.suspense-label code {
+  font-family: 'Fira Code', monospace;
+  font-size: 0.78rem;
+  color: var(--accent);
+  background: rgba(108, 99, 255, 0.1);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
 }

@@ -105,18 +105,23 @@ function measureElement(
 }
 
 /**
- * Performs a full trace of all traceable elements within the container,
- * returning their measured rects relative to the container's position.
+ * Performs a full trace of all traceable elements within the container.
+ *
+ * @param anchorRef - When provided (Reporter mode), elements are measured
+ *   relative to this element instead of the container. Allows Reporter's
+ *   wrapper to use display:contents without breaking measurement.
  */
 function performTrace(
   container: HTMLElement,
   globalBorderRadius?: string,
+  anchorRef?: RefObject<HTMLElement | null>,
 ): ShimmerRect[] {
-  const containerRect = container.getBoundingClientRect();
+  const anchor = anchorRef?.current ?? container;
+  const anchorRect = anchor.getBoundingClientRect();
   const elements = collectTraceableElements(container);
 
   return elements
-    .map((el) => measureElement(el, containerRect, globalBorderRadius))
+    .map((el) => measureElement(el, anchorRect, globalBorderRadius))
     .filter((r): r is ShimmerRect => r !== null && r.width > 0 && r.height > 0);
 }
 
@@ -125,19 +130,23 @@ function performTrace(
  * and returns their measured ShimmerRects.
  *
  * Uses ResizeObserver to re-trace on container resize.
+ *
+ * @param anchorRef - When set, rects are relative to this element (Master).
+ *   Used by Reporter so its display:contents wrapper doesn't break measurement.
  */
 export function useTrace(
   containerRef: RefObject<HTMLElement | null>,
   loading: boolean,
   globalBorderRadius?: string,
+  anchorRef?: RefObject<HTMLElement | null>,
 ): ShimmerRect[] {
   const [rects, setRects] = useState<ShimmerRect[]>([]);
 
   const trace = useCallback(() => {
     if (!containerRef.current) return;
-    const traced = performTrace(containerRef.current, globalBorderRadius);
+    const traced = performTrace(containerRef.current, globalBorderRadius, anchorRef);
     setRects(traced);
-  }, [containerRef, globalBorderRadius]);
+  }, [containerRef, globalBorderRadius, anchorRef]);
 
   useLayoutEffect(() => {
     if (!loading || !containerRef.current) {

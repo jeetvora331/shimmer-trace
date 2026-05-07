@@ -1,7 +1,208 @@
-import { useState, useEffect } from "react";
-import { Shimmer, createShimmer } from "shimmer-trace";
+import { useState, useMemo } from "react";
+import {
+	Shimmer,
+	createShimmer,
+	ShimmerSuspense,
+	useIsShimmering,
+} from "shimmer-trace";
 
-// Factory demo — pre-configured Shimmer for the app
+// ─── Fake suspendable resource ───────────────────────────────────────────────
+
+type Resource<T> = { read(): T };
+
+function createResource<T>(promise: Promise<T>): Resource<T> {
+	let status: "pending" | "success" | "error" = "pending";
+	let result: T;
+	let error: unknown;
+	const suspender = promise.then(
+		(data) => {
+			status = "success";
+			result = data;
+		},
+		(err) => {
+			status = "error";
+			error = err;
+		},
+	);
+	return {
+		read() {
+			if (status === "pending") throw suspender;
+			if (status === "error") throw error;
+			return result!;
+		},
+	};
+}
+
+function fakeUser(delay: number) {
+	return new Promise<{ name: string; role: string; bio: string }>((resolve) =>
+		setTimeout(
+			() =>
+				resolve({
+					name: "Alex Rivera",
+					role: "Senior Engineer",
+					bio: "Building distributed systems and developer tools. Open source contributor.",
+				}),
+			delay,
+		),
+	);
+}
+
+const DarkShimmer = createShimmer({
+	baseColor: "#1e1e3a",
+	highlightColor: "#2d2d52",
+});
+
+// ─── Option A: component has NO shimmer awareness ────────────────────────────
+
+function UserCardA({
+	resource,
+}: {
+	resource: Resource<{ name: string; role: string; bio: string }>;
+}) {
+	const user = resource.read();
+	return (
+		<div className="profile-card">
+			<img
+				className="profile-avatar"
+				src="https://i.pravatar.cc/160?img=5"
+				alt="Avatar"
+			/>
+			<div className="profile-info">
+				<h3>{user.name}</h3>
+				<span className="subtitle">{user.role}</span>
+				<p>{user.bio}</p>
+			</div>
+		</div>
+	);
+}
+
+// Template: same shape, no data — passed as `template` prop to ShimmerSuspense
+const UserCardATemplate = () => (
+	<div className="profile-card">
+		<img
+			className="profile-avatar"
+			src="https://i.pravatar.cc/160?img=5"
+			alt=""
+		/>
+		<div className="profile-info">
+			<h3>&nbsp;</h3>
+			<span className="subtitle">&nbsp;</span>
+			<p>
+				&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			</p>
+		</div>
+	</div>
+);
+
+// ─── Option B: component uses useIsShimmering to skip fetch in shimmer mode ──
+
+function UserCardB({
+	resource,
+}: {
+	resource: Resource<{ name: string; role: string; bio: string }>;
+}) {
+	const isShimmering = useIsShimmering();
+	// When isShimmering=true (inside ShimmerSuspense fallback), skip read()
+	// so we don't throw and can render an empty shape for the tracer.
+	const user = isShimmering ? null : resource.read();
+	return (
+		<div className="profile-card">
+			<img
+				className="profile-avatar"
+				src="https://i.pravatar.cc/160?img=8"
+				alt="Avatar"
+			/>
+			<div className="profile-info">
+				<h3>{user?.name ?? " "}</h3>
+				<span className="subtitle">{user?.role ?? " "}</span>
+				<p>{user?.bio ?? "                         "}</p>
+			</div>
+		</div>
+	);
+}
+
+// ─── Suspense demo section (keyed so reload re-mounts + re-fetches) ──────────
+
+function SuspenseDemoSection({
+	shimmerAnimation,
+}: {
+	shimmerAnimation: "wave" | "pulse" | "breathe";
+}) {
+	const resourceA = useMemo(() => createResource(fakeUser(2000)), []);
+	const resourceB = useMemo(() => createResource(fakeUser(2500)), []);
+
+	return (
+		<div className="suspense-grid">
+			<div>
+				<p className="suspense-label">
+					Option A — <code>template</code> prop (component has zero shimmer
+					awareness)
+				</p>
+				<ShimmerSuspense
+					template={<UserCardATemplate />}
+					animation={shimmerAnimation}
+					baseColor="#1e1e3a"
+					highlightColor="#2d2d52"
+				>
+					<UserCardA resource={resourceA} />
+				</ShimmerSuspense>
+			</div>
+
+			<div>
+				<p className="suspense-label">
+					Option B — <code>useIsShimmering()</code> hook (component renders
+					empty shape in shimmer mode)
+				</p>
+				<ShimmerSuspense
+					animation={shimmerAnimation}
+					baseColor="#1e1e3a"
+					highlightColor="#2d2d52"
+				>
+					<UserCardB resource={resourceB} />
+				</ShimmerSuspense>
+			</div>
+		</div>
+	);
+}
+
+// ─── Flex layout demo (shows style passthrough + single unified wave) ──────────
+//
+// One <Shimmer> wraps all cards with style={{ display:'flex' }}.
+// Single master → single overlay → one wave sweeps the full row in sync.
+
+function FlexLayoutDemo({
+	loading,
+	animation,
+}: {
+	loading: boolean;
+	animation: "wave" | "pulse" | "breathe";
+}) {
+	return (
+		<Shimmer
+			loading={loading}
+			animation={animation}
+			baseColor="#1e1e3a"
+			highlightColor="#2d2d52"
+			style={{ display: "flex", gap: "1rem" }}
+		>
+			<div className="stat-card" style={{ flex: 1 }}>
+				<span className="stat-value">4,821</span>
+				<span className="stat-label">Total Users</span>
+			</div>
+			<div className="stat-card" style={{ flex: 1 }}>
+				<span className="stat-value">98.4%</span>
+				<span className="stat-label">Uptime</span>
+			</div>
+			<div className="stat-card" style={{ flex: 1 }}>
+				<span className="stat-value">142ms</span>
+				<span className="stat-label">Avg Latency</span>
+			</div>
+		</Shimmer>
+	);
+}
+
+// ─── App ─────────────────────────────────────────────────────────────────────
+
 const PulseShimmer = createShimmer({
 	animation: "pulse",
 	baseColor: "#1e1e3a",
@@ -9,42 +210,30 @@ const PulseShimmer = createShimmer({
 	speed: 1.2,
 });
 
-function App() {
+export default function App() {
 	const [loading, setLoading] = useState(true);
 	const [animation, setAnimation] = useState<"wave" | "pulse" | "breathe">(
 		"wave",
 	);
-
-	// Simulate data loading
-	const [fruits, setFruits] = useState<string[]>([]);
-
-	useEffect(() => {
-		if (!loading) {
-			const timer = setTimeout(() => {
-				setFruits([
-					"Apple",
-					"Banana",
-					"Cherry",
-					"Dragon Fruit",
-					"Elderberry",
-					"Apple",
-					"Banana",
-					"Cherry",
-					"Dragon Fruit",
-					"Elderberry",
-				]);
-			}, 100);
-			return () => clearTimeout(timer);
-		} else {
-			setFruits([]);
-		}
-	}, [loading]);
+	const [suspenseKey, setSuspenseKey] = useState(0);
+	const [fruits] = useState([
+		"Apple",
+		"Banana",
+		"Cherry",
+		"Dragon Fruit",
+		"Elderberry",
+		"Fig",
+		"Grape",
+		"Honeydew",
+		"Kiwi",
+		"Lemon",
+	]);
 
 	return (
 		<div className="app">
 			{/* ─── Header ─── */}
 			<div className="header">
-				<h1>shimmer-trace ✨🚀</h1>
+				<h1>shimmer-trace ✨</h1>
 				<p>Automatic skeleton loaders that trace your real UI</p>
 			</div>
 
@@ -85,12 +274,7 @@ function App() {
 			{/* ─── Demo 1: Profile Card ─── */}
 			<div className="demo-section">
 				<h2>Profile Card</h2>
-				<Shimmer
-					loading={loading}
-					animation={animation}
-					baseColor="#1e1e3a"
-					highlightColor="#2d2d52"
-				>
+				<DarkShimmer loading={loading} animation={animation}>
 					<div className="profile-card">
 						<img
 							className="profile-avatar"
@@ -106,18 +290,13 @@ function App() {
 							</p>
 						</div>
 					</div>
-				</Shimmer>
+				</DarkShimmer>
 			</div>
 
-			{/* ─── Demo 2: Form ─── */}
+			{/* ─── Demo 2: Contact Form ─── */}
 			<div className="demo-section">
 				<h2>Contact Form</h2>
-				<Shimmer
-					loading={loading}
-					animation={animation}
-					baseColor="#1e1e3a"
-					highlightColor="#2d2d52"
-				>
+				<DarkShimmer loading={loading} animation={animation}>
 					<div className="form-demo">
 						<div className="form-row">
 							<div className="form-group">
@@ -142,21 +321,22 @@ function App() {
 							<button className="btn btn-primary">Send Message</button>
 						</div>
 					</div>
-				</Shimmer>
+				</DarkShimmer>
 			</div>
 
-			{/* ─── Demo 3: List with dummyLength ─── */}
+			{/* ─── Demo 3: Fruit List (dummyLength) ─── */}
 			<div className="demo-section">
-				<h2>Fruit List (dummyLength=15)</h2>
+				<h2>
+					List Skeleton — <code>dummyLength</code>
+				</h2>
 				<div className="list-demo">
 					<Shimmer
 						loading={loading}
 						animation={animation}
 						baseColor="#1e1e3a"
 						highlightColor="#2d2d52"
-						dummyLength={15}
+						dummyLength={10}
 					>
-						{/* The Actual Data (Used only when loading is false) */}
 						{fruits.map((fruit, i) => (
 							<div className="list-item" key={i}>
 								<div className="list-item-icon">🍎</div>
@@ -171,9 +351,46 @@ function App() {
 				</div>
 			</div>
 
-			{/* ─── Demo 4: Factory (createShimmer) ─── */}
+			{/* ─── Demo 4: Flex Layout (style passthrough) ─── */}
 			<div className="demo-section">
-				<h2>Factory Pattern (createShimmer with Pulse)</h2>
+				<h2>
+					Flex Layout — <code>style</code> passthrough
+				</h2>
+				<p className="demo-description">
+					One <code>{"<Shimmer>"}</code> wraps all three cards with{" "}
+					<code>style={`{{ display: 'flex' }}`}</code>. Single master → single
+					overlay → one wave sweeps the full row in sync.
+				</p>
+				<FlexLayoutDemo loading={loading} animation={animation} />
+			</div>
+
+			{/* ─── Demo 5: ShimmerSuspense ─── */}
+			<div className="demo-section">
+				<h2>ShimmerSuspense — Suspense boundary with auto-skeleton</h2>
+				<p className="demo-description">
+					No <code>loading</code> prop. Shimmer shows automatically while
+					children are suspended. Click Reload to re-trigger.
+				</p>
+				<div className="suspense-controls">
+					<button
+						className="reload-btn"
+						onClick={() => setSuspenseKey((k) => k + 1)}
+					>
+						↺ Reload (re-suspend)
+					</button>
+				</div>
+				<SuspenseDemoSection key={suspenseKey} shimmerAnimation={animation} />
+			</div>
+
+			{/* ─── Demo 6: Factory (createShimmer) ─── */}
+			<div className="demo-section">
+				<h2>
+					Factory Pattern — <code>createShimmer</code>
+				</h2>
+				<p className="demo-description">
+					Pre-configure once, use everywhere. <code>PulseShimmer</code> bakes in
+					pulse animation and dark colors.
+				</p>
 				<PulseShimmer loading={loading}>
 					<div className="profile-card">
 						<img
@@ -195,5 +412,3 @@ function App() {
 		</div>
 	);
 }
-
-export default App;

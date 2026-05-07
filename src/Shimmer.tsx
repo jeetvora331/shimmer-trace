@@ -56,6 +56,8 @@ export function Shimmer({
   highlightColor,
   speed,
   borderRadius,
+  className,
+  style,
 }: ShimmerProps) {
   const parentContext = useShimmerContext();
   const isMaster = !parentContext || stopPropagation;
@@ -80,6 +82,8 @@ export function Shimmer({
         loading={loading}
         config={config}
         dummyLength={dummyLength}
+        className={className}
+        style={style}
       >
         {children}
       </MasterShimmer>
@@ -106,6 +110,8 @@ interface MasterShimmerProps {
   config: Required<typeof DEFAULTS>;
   children: React.ReactNode;
   dummyLength?: number;
+  className?: string;
+  style?: React.CSSProperties;
 }
 
 function MasterShimmer({
@@ -114,6 +120,8 @@ function MasterShimmer({
   config,
   children,
   dummyLength,
+  className,
+  style,
 }: MasterShimmerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -164,7 +172,7 @@ function MasterShimmer({
     () => ({
       register,
       unregister,
-      masterElement: containerRef.current,
+      masterRef: containerRef,
       loading,
       config,
     }),
@@ -173,22 +181,20 @@ function MasterShimmer({
 
   return (
     <ShimmerContext.Provider value={contextValue}>
+      {/*
+       * visibility:hidden hides children while preserving layout.
+       * ShimmerOverlay uses visibility:visible to punch through the hidden state.
+       * User style is merged so layout (display:flex etc) can be applied directly.
+       */}
       <div
         ref={containerRef}
-        style={{ position: 'relative' }}
+        className={className}
+        style={{ position: 'relative', visibility: loading ? 'hidden' : undefined, ...style }}
+        aria-hidden={loading || undefined}
         data-shimmer-master
       >
-        {/* Children — hidden during loading to preserve layout */}
-        <div
-          style={{
-            visibility: loading ? 'hidden' : 'visible',
-          }}
-          aria-hidden={loading}
-        >
-          {renderedChildren}
-        </div>
+        {renderedChildren}
 
-        {/* Single-draw overlay */}
         {loading && (
           <ShimmerOverlay
             rects={allRects}
@@ -225,36 +231,24 @@ function ReporterShimmer({
   // Cache the first child element for use as a template during future loading states
   const templateCacheRef = useRef<React.ReactElement | null>(null);
 
-  // Trace this reporter's children
+  // Trace children relative to Master directly (anchorRef = masterRef).
+  // This works because Reporter's wrapper uses display:contents, making
+  // getBoundingClientRect() on it unreliable. useTrace measures each
+  // element against the master anchor instead.
   const tracedRects = useTrace(
     containerRef,
     parentContext.loading,
     config.borderRadius || undefined,
+    parentContext.masterRef,
   );
 
-  // Bubble traced rects up to the Master, offset by the Master's position
+  // Rects are already relative to Master — register directly, no offset needed.
   React.useLayoutEffect(() => {
     if (!parentContext.loading || tracedRects.length === 0) {
       parentContext.unregister(id);
       return;
     }
-
-    if (!containerRef.current || !parentContext.masterElement) {
-      return;
-    }
-
-    const masterRect = parentContext.masterElement.getBoundingClientRect();
-    const myRect = containerRef.current.getBoundingClientRect();
-
-    // Offset rects to be relative to the Master container
-    const offsetRects = tracedRects.map((r) => ({
-      ...r,
-      x: r.x + (myRect.left - masterRect.left),
-      y: r.y + (myRect.top - masterRect.top),
-    }));
-
-    parentContext.register(id, offsetRects);
-
+    parentContext.register(id, tracedRects);
     return () => {
       parentContext.unregister(id);
     };
@@ -270,7 +264,9 @@ function ReporterShimmer({
   });
 
   return (
-    <div ref={containerRef} data-shimmer-reporter>
+    // display:contents makes this wrapper layout-transparent (doesn't affect
+    // flex/grid parents). DOM traversal and child measurement still work normally.
+    <div ref={containerRef} data-shimmer-reporter style={{ display: 'contents' }}>
       {renderedChildren}
     </div>
   );
@@ -356,18 +352,11 @@ function useListChildren({
     );
   }
 
-  // Strategy 3: No children AND no cache (very first render)
-  // Render generic placeholder blocks that the shimmer overlay will trace
-  return Array.from({ length: dummyLength }, (_, i) => (
-    <div
-      key={generateShimmerKey(`${id}-placeholder-${i}`)}
-      style={{
-        height: 56,
-        borderRadius: 8,
-        marginBottom: i < dummyLength - 1 ? 12 : 0,
-      }}
-    />
-  ));
+  // Strategy 3: No children AND no cache (very first render).
+  // Return null — an empty shimmer is better than wrong-shaped placeholders.
+  // Fix: pass `template` to ShimmerSuspense, or ensure data is available before
+  // setting loading=true for the first time to populate the cache.
+  return null;
 }
 
 // removed Shimmer.displayName

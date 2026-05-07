@@ -34,6 +34,7 @@ out/
 *.njsproj
 *.sln
 *.sw?
+.claude/*
 
 # OS
 .DS_Store
@@ -54,3 +55,5 @@ demo/node_modules/
 
 # Turbo
 .turbo/
+.claude/worktrees/*
+.claude/settings.local.json

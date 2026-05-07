@@ -7,7 +7,8 @@
 
 export { Shimmer } from './Shimmer';
 export { createShimmer } from './createShimmer';
-export { ShimmerContext, useShimmerContext } from './ShimmerContext';
+export { ShimmerContext, useShimmerContext, useIsShimmering } from './ShimmerContext';
+export { ShimmerSuspense } from './ShimmerSuspense';
 
 export type {
   ShimmerProps,
@@ -15,3 +16,4 @@ export type {
   ShimmerRect,
   AnimationType,
 } from './types';
+export type { ShimmerSuspenseProps } from './ShimmerSuspense';
