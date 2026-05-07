@@ -25,7 +25,7 @@ export interface ShimmerConfig {
   highlightColor?: string;
   /** Animation duration in seconds. Defaults to 1.5. */
   speed?: number;
-  /** Global border-radius override. If omitted, auto-detected from each element. */
+  /** Global border-radius override. If omitted, auto-detected from each element (defaults to 4px if detection is 0px). */
   borderRadius?: string;
 }
 

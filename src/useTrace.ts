@@ -80,8 +80,14 @@ function measureElement(
   }
 
   const computedStyle = window.getComputedStyle(el);
-  const borderRadius =
-    globalBorderRadius || computedStyle.borderRadius || '4px';
+  let borderRadius = globalBorderRadius || computedStyle.borderRadius;
+
+  // If the element has no border radius (common for text tags),
+  // apply a small default to avoid sharp edges in the shimmer.
+  const isZero = !borderRadius || borderRadius === 'none' || borderRadius.split(' ').every(v => v === '0' || v === '0px' || v === '0%');
+  if (isZero) {
+    borderRadius = '4px';
+  }
 
   let width = elRect.width;
   let height = elRect.height;
