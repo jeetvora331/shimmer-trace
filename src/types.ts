@@ -1,4 +1,4 @@
-import React, { ReactNode, ReactElement } from 'react';
+import React, { ReactNode } from 'react';
 
 /**
  * Represents a measured rectangle of a traced DOM element,
@@ -45,6 +45,43 @@ export interface ShimmerProps extends ShimmerConfig {
    * When `loading=false`, children are rendered as-is.
    */
   dummyLength?: number;
+  /**
+   * Props injected into each child element while `loading=true` so the
+   * skeleton renders with realistic shape without requiring real data.
+   *
+   * Example:
+   * ```tsx
+   * <Shimmer
+   *   loading={loading}
+   *   dummyData={{ user: { name: 'Loading...', role: '...', avatar: '' } }}
+   * >
+   *   <UserCard user={user} />
+   * </Shimmer>
+   * ```
+   *
+   * While loading, each direct child is cloned with these props merged on top
+   * of its own props. Ignored when `loading=false`.
+   */
+  dummyData?: Record<string, any>;
+  /**
+   * Component used to auto-generate skeleton elements while `loading=true`.
+   *
+   * When set, Shimmer ignores `children` during loading and renders
+   * `dummyLength` (defaults to 1) instances of `<as {...dummyData} />`
+   * to derive shape. Real children render once `loading=false`.
+   *
+   * ```tsx
+   * <Shimmer
+   *   loading={loading}
+   *   as={MovieCard}
+   *   dummyData={{ movie: movieTemplate }}
+   *   dummyLength={10}
+   * >
+   *   {movies.map((m) => <MovieCard movie={m} key={m.id} />)}
+   * </Shimmer>
+   * ```
+   */
+  as?: React.ComponentType<any>;
   /** Force this Shimmer to be a Master renderer even if nested inside another Shimmer. */
   stopPropagation?: boolean;
   /**

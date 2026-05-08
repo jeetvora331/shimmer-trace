@@ -4,6 +4,13 @@ import { searchMovies, getPopularMovies } from "../services/api";
 import "../css/Home.css";
 import { Shimmer } from "shimmer-trace";
 
+const movieTemplate = {
+	id: 0,
+	title: "Loading title",
+	poster_path: "",
+	release_date: "0000-00-00",
+};
+
 function Home() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [movies, setMovies] = useState([]);
@@ -69,14 +76,14 @@ function Home() {
 				animation={"wave"}
 				baseColor="#1e1e3a"
 				highlightColor="#2d2d52"
+				as={MovieCard}
+				dummyData={{ movie: movieTemplate }}
 				dummyLength={10}
 				className="movies-grid"
 			>
-				{movies.length > 0 ? (
-					movies.map((movie) => <MovieCard movie={movie} key={movie.id} />)
-				) : (
-					<MovieCard movie={{}} />
-				)}
+				{movies.map((movie) => (
+					<MovieCard movie={movie} key={movie.id} />
+				))}
 			</Shimmer>
 		</div>
 	);

@@ -216,18 +216,7 @@ export default function App() {
 		"wave",
 	);
 	const [suspenseKey, setSuspenseKey] = useState(0);
-	const [fruits] = useState([
-		"Apple",
-		"Banana",
-		"Cherry",
-		"Dragon Fruit",
-		"Elderberry",
-		"Fig",
-		"Grape",
-		"Honeydew",
-		"Kiwi",
-		"Lemon",
-	]);
+	const [fruits] = useState<string[]>([]);
 
 	return (
 		<div className="app">
@@ -324,20 +313,22 @@ export default function App() {
 				</DarkShimmer>
 			</div>
 
-			{/* ─── Demo 3: Fruit List (dummyLength) ─── */}
+			{/* ─── Demo 3: Fruit List (inline mapping) ─── */}
 			<div className="demo-section">
 				<h2>
-					List Skeleton — <code>dummyLength</code>
+					List Skeleton — Inline Dummy Data Mapping
 				</h2>
+				<p className="demo-description">
+					<code>fruits=[]</code> at first render. If you don't want to extract a component or use a <code>template</code> prop, you can simply map over dummy data to trace the structure!
+				</p>
 				<div className="list-demo">
 					<Shimmer
 						loading={loading}
 						animation={animation}
 						baseColor="#1e1e3a"
 						highlightColor="#2d2d52"
-						dummyLength={10}
 					>
-						{fruits.map((fruit, i) => (
+						{(fruits.length > 0 ? fruits : Array(10).fill("Loading fruit")).map((fruit, i) => (
 							<div className="list-item" key={i}>
 								<div className="list-item-icon">🍎</div>
 								<div className="list-item-content">
