@@ -80,6 +80,7 @@ function Home() {
 				dummyData={{ movie: movieTemplate }}
 				dummyLength={10}
 				className="movies-grid"
+				preserveBackground={false}
 			>
 				{movies.map((movie) => (
 					<MovieCard movie={movie} key={movie.id} />

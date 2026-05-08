@@ -126,7 +126,12 @@ function UserCardB({
 function SuspenseDemoSection({
 	shimmerAnimation,
 }: {
-	shimmerAnimation: "wave" | "pulse" | "breathe";
+	shimmerAnimation:
+		| "wave"
+		| "pulse"
+		| "shine"
+		| "glow"
+		| "gradient";
 }) {
 	const resourceA = useMemo(() => createResource(fakeUser(2000)), []);
 	const resourceB = useMemo(() => createResource(fakeUser(2500)), []);
@@ -175,7 +180,12 @@ function FlexLayoutDemo({
 	animation,
 }: {
 	loading: boolean;
-	animation: "wave" | "pulse" | "breathe";
+	animation:
+		| "wave"
+		| "pulse"
+		| "shine"
+		| "glow"
+		| "gradient";
 }) {
 	return (
 		<Shimmer
@@ -212,9 +222,13 @@ const PulseShimmer = createShimmer({
 
 export default function App() {
 	const [loading, setLoading] = useState(true);
-	const [animation, setAnimation] = useState<"wave" | "pulse" | "breathe">(
-		"wave",
-	);
+	const [animation, setAnimation] = useState<
+		| "wave"
+		| "pulse"
+		| "shine"
+		| "glow"
+		| "gradient"
+	>("wave");
 	const [suspenseKey, setSuspenseKey] = useState(0);
 	const [fruits] = useState<string[]>([]);
 
@@ -253,10 +267,22 @@ export default function App() {
 					💓 Pulse
 				</button>
 				<button
-					className={animation === "breathe" ? "active" : ""}
-					onClick={() => setAnimation("breathe")}
+					className={animation === "shine" ? "active" : ""}
+					onClick={() => setAnimation("shine")}
 				>
-					🌬️ Breathe
+					✨ Shine
+				</button>
+				<button
+					className={animation === "glow" ? "active" : ""}
+					onClick={() => setAnimation("glow")}
+				>
+					🔆 Glow
+				</button>
+				<button
+					className={animation === "gradient" ? "active" : ""}
+					onClick={() => setAnimation("gradient")}
+				>
+					🌈 Gradient
 				</button>
 			</div>
 
@@ -285,7 +311,11 @@ export default function App() {
 			{/* ─── Demo 2: Contact Form ─── */}
 			<div className="demo-section">
 				<h2>Contact Form</h2>
-				<DarkShimmer loading={loading} animation={animation}>
+				<DarkShimmer
+					loading={loading}
+					animation={animation}
+					preserveBackground={false}
+				>
 					<div className="form-demo">
 						<div className="form-row">
 							<div className="form-group">
@@ -315,11 +345,11 @@ export default function App() {
 
 			{/* ─── Demo 3: Fruit List (inline mapping) ─── */}
 			<div className="demo-section">
-				<h2>
-					List Skeleton — Inline Dummy Data Mapping
-				</h2>
+				<h2>List Skeleton — Inline Dummy Data Mapping</h2>
 				<p className="demo-description">
-					<code>fruits=[]</code> at first render. If you don't want to extract a component or use a <code>template</code> prop, you can simply map over dummy data to trace the structure!
+					<code>fruits=[]</code> at first render. If you don't want to extract a
+					component or use a <code>template</code> prop, you can simply map over
+					dummy data to trace the structure!
 				</p>
 				<div className="list-demo">
 					<Shimmer
@@ -328,16 +358,18 @@ export default function App() {
 						baseColor="#1e1e3a"
 						highlightColor="#2d2d52"
 					>
-						{(fruits.length > 0 ? fruits : Array(10).fill("Loading fruit")).map((fruit, i) => (
-							<div className="list-item" key={i}>
-								<div className="list-item-icon">🍎</div>
-								<div className="list-item-content">
-									<h4>{fruit}</h4>
-									<p>A delicious fruit</p>
+						{(fruits.length > 0 ? fruits : Array(10).fill("Loading fruit")).map(
+							(fruit, i) => (
+								<div className="list-item" key={i}>
+									<div className="list-item-icon">🍎</div>
+									<div className="list-item-content">
+										<h4>{fruit}</h4>
+										<p>A delicious fruit</p>
+									</div>
+									<span className="list-item-badge">Fresh</span>
 								</div>
-								<span className="list-item-badge">Fresh</span>
-							</div>
-						))}
+							),
+						)}
 					</Shimmer>
 				</div>
 			</div>
