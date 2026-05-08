@@ -13,7 +13,12 @@ export interface ShimmerRect {
 }
 
 /** Available animation types for the shimmer effect. */
-export type AnimationType = 'wave' | 'pulse' | 'breathe';
+export type AnimationType =
+  | 'wave'
+  | 'pulse'
+  | 'shine'
+  | 'glow'
+  | 'gradient';
 
 /** Configuration options for the shimmer effect (all optional). */
 export interface ShimmerConfig {
@@ -27,6 +32,15 @@ export interface ShimmerConfig {
   speed?: number;
   /** Global border-radius override. If omitted, auto-detected from each element (defaults to 4px if detection is 0px). */
   borderRadius?: string;
+  /**
+   * Keep container backgrounds, borders, and padding visible while loading.
+   * When `true` (default), only text and media leaves are hidden via
+   * `color:transparent` / `opacity:0` so card backgrounds, borders, and
+   * spacing remain visible underneath the shimmer overlay.
+   *
+   * Set `false` for legacy behavior (`visibility:hidden` on whole tree).
+   */
+  preserveBackground?: boolean;
 }
 
 /** Props for the Shimmer component. */
@@ -103,4 +117,5 @@ export const DEFAULTS: Required<ShimmerConfig> = {
   highlightColor: '#f5f5f5',
   speed: 1.5,
   borderRadius: '',
+  preserveBackground: true,
 };

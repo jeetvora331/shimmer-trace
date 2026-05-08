@@ -30,6 +30,7 @@ export function createShimmer(config: ShimmerConfig = {}) {
     highlightColor: config.highlightColor ?? DEFAULTS.highlightColor,
     speed: config.speed ?? DEFAULTS.speed,
     borderRadius: config.borderRadius ?? DEFAULTS.borderRadius,
+    preserveBackground: config.preserveBackground ?? DEFAULTS.preserveBackground,
   };
 
   function ConfiguredShimmer(props: Omit<ShimmerProps, keyof ShimmerConfig> & Partial<ShimmerConfig>) {

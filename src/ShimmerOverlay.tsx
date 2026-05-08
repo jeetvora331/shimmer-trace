@@ -10,9 +10,9 @@ interface ShimmerOverlayProps {
 }
 
 /**
- * Returns animation-specific inline styles for the shimmer effect.
- * For the wave animation, each block shares the same background-position
- * animation so the wave sweeps across all blocks in sync.
+ * Returns animation-specific inline styles for each shimmer block.
+ * For sweep-style animations (wave, shine), the colored gradient is rendered
+ * as a child layer so the sweep can extend across the container in sync.
  */
 function getBlockStyles(
   animation: AnimationType,
@@ -20,7 +20,6 @@ function getBlockStyles(
   highlightColor: string,
   speed: number,
   rect: ShimmerRect,
-  containerWidth: number,
 ): React.CSSProperties {
   const base: React.CSSProperties = {
     position: 'absolute',
@@ -34,53 +33,54 @@ function getBlockStyles(
 
   switch (animation) {
     case 'wave':
-      return {
-        ...base,
-        background: baseColor,
-      };
+    case 'shine':
+      return { ...base, background: baseColor };
     case 'pulse':
       return {
         ...base,
         background: baseColor,
         animation: `shimmer-pulse ${speed}s ease-in-out infinite`,
       };
-    case 'breathe':
+    case 'glow':
       return {
         ...base,
         background: baseColor,
-        animation: `shimmer-breathe ${speed * 1.5}s ease-in-out infinite`,
+        animation: `shimmer-glow ${speed}s ease-in-out infinite`,
+      };
+    case 'gradient':
+      return {
+        ...base,
+        backgroundImage: `linear-gradient(90deg, ${baseColor}, ${highlightColor}, ${baseColor})`,
+        backgroundSize: '200% 100%',
+        animation: `shimmer-gradient ${speed * 1.5}s ease-in-out infinite`,
       };
   }
 }
 
 /**
- * The wave shine effect — a pseudo-element that sweeps across.
- * We use a single absolutely-positioned div that covers the entire
- * container, clipped by each block's position.
+ * Sweeping shine layer used by `wave` and `shine` animations.
+ * Spans the full container width so the highlight sweeps in sync across all blocks.
  */
-const WaveShine: React.FC<{
+const SweepLayer: React.FC<{
   rect: ShimmerRect;
   highlightColor: string;
   speed: number;
   containerWidth: number;
-}> = ({ rect, highlightColor, speed, containerWidth }) => {
+  variant: 'wave' | 'shine';
+}> = ({ rect, highlightColor, speed, containerWidth, variant }) => {
+  const isShine = variant === 'shine';
   return (
     <div
       style={{
         position: 'absolute',
         top: 0,
-        // Offset left so the wave aligns with the container's left edge
         left: -rect.x,
-        // Width is the container width so the gradient spans the whole container
         width: containerWidth > 0 ? containerWidth : '100vw',
         height: '100%',
-        background: `linear-gradient(
-          90deg,
-          transparent 0%,
-          ${highlightColor} 50%,
-          transparent 100%
-        )`,
-        animation: `shimmer-wave ${speed}s ease-in-out infinite`,
+        background: isShine
+          ? `linear-gradient(115deg, transparent 30%, ${highlightColor} 50%, transparent 70%)`
+          : `linear-gradient(90deg, transparent 0%, ${highlightColor} 50%, transparent 100%)`,
+        animation: `${isShine ? 'shimmer-shine' : 'shimmer-wave'} ${speed}s ease-in-out infinite`,
       }}
     />
   );
@@ -89,11 +89,9 @@ const WaveShine: React.FC<{
 /**
  * The overlay component rendered by the Master Shimmer.
  *
- * Instead of a single SVG mask, we render individual absolutely-positioned
- * divs for each traced rect. Each block has the base color, and for the
- * "wave" animation, a shine pseudo-element sweeps through in sync.
- *
- * This approach is more reliable across browsers and easier to debug.
+ * Renders one absolutely-positioned div per traced rect. Sweep-style
+ * animations (`wave`, `shine`) get an additional gradient layer that spans
+ * the container so the highlight passes across all blocks in sync.
  */
 export const ShimmerOverlay: React.FC<ShimmerOverlayProps> = ({
   rects,
@@ -112,6 +110,8 @@ export const ShimmerOverlay: React.FC<ShimmerOverlayProps> = ({
 
   if (rects.length === 0) return null;
 
+  const isSweep = animation === 'wave' || animation === 'shine';
+
   return (
     <div
       ref={overlayRef}
@@ -127,29 +127,21 @@ export const ShimmerOverlay: React.FC<ShimmerOverlayProps> = ({
         height: '100%',
         zIndex: 1,
         pointerEvents: 'none',
-        // Punch through the parent container's visibility:hidden so the
-        // shimmer overlay remains visible while children are hidden.
         visibility: 'visible',
       }}
     >
       {rects.map((rect, i) => (
         <div
           key={i}
-          style={getBlockStyles(
-            animation,
-            baseColor,
-            highlightColor,
-            speed,
-            rect,
-            containerWidth,
-          )}
+          style={getBlockStyles(animation, baseColor, highlightColor, speed, rect)}
         >
-          {animation === 'wave' && (
-            <WaveShine
+          {isSweep && (
+            <SweepLayer
               rect={rect}
               highlightColor={highlightColor}
               speed={speed}
               containerWidth={containerWidth}
+              variant={animation as 'wave' | 'shine'}
             />
           )}
         </div>

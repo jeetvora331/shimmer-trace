@@ -11,9 +11,37 @@ const CSS = `
   50% { opacity: 1; }
 }
 
-@keyframes shimmer-breathe {
-  0%, 100% { opacity: 0.3; transform: scale(0.98); }
-  50% { opacity: 0.8; transform: scale(1); }
+@keyframes shimmer-shine {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(150%) skewX(-20deg); }
+}
+
+@keyframes shimmer-glow {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.35); }
+}
+
+@keyframes shimmer-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* preserveBackground mode: hide text + media but keep container styles */
+[data-shimmer-master][data-shimmer-preserve-bg="true"] :is(h1,h2,h3,h4,h5,h6,p,span,a,li,label,td,th,blockquote,code,pre,strong,em,small) {
+  color: transparent !important;
+  text-shadow: none !important;
+}
+[data-shimmer-master][data-shimmer-preserve-bg="true"] :is(img,video,svg,canvas,picture) {
+  opacity: 0 !important;
+}
+[data-shimmer-master][data-shimmer-preserve-bg="true"] :is(input,textarea,select,button) {
+  color: transparent !important;
+  opacity: 0 !important;
+}
+[data-shimmer-master][data-shimmer-preserve-bg="true"] {
+  pointer-events: none !important;
+  user-select: none !important;
 }
 `;
 

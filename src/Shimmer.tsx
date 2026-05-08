@@ -53,6 +53,7 @@ export function Shimmer({
 	highlightColor,
 	speed,
 	borderRadius,
+	preserveBackground,
 	className,
 	style,
 }: ShimmerProps) {
@@ -75,6 +76,10 @@ export function Shimmer({
 				borderRadius ??
 				parentContext?.config.borderRadius ??
 				DEFAULTS.borderRadius,
+			preserveBackground:
+				preserveBackground ??
+				parentContext?.config.preserveBackground ??
+				DEFAULTS.preserveBackground,
 		}),
 		[
 			animation,
@@ -82,6 +87,7 @@ export function Shimmer({
 			highlightColor,
 			speed,
 			borderRadius,
+			preserveBackground,
 			parentContext?.config,
 		],
 	);
@@ -202,11 +208,15 @@ function MasterShimmer({
 				className={className}
 				style={{
 					position: "relative",
-					visibility: loading ? "hidden" : undefined,
+					visibility:
+						loading && !config.preserveBackground ? "hidden" : undefined,
 					...style,
 				}}
 				aria-hidden={loading || undefined}
 				data-shimmer-master
+				data-shimmer-preserve-bg={
+					loading && config.preserveBackground ? "true" : undefined
+				}
 			>
 				{renderedChildren}
 
