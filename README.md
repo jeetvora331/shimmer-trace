@@ -10,6 +10,10 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-ready-3178c6)](https://www.typescriptlang.org)
 [![license](https://img.shields.io/npm/l/shimmer-trace)](./LICENSE)
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/jeetvora331/shimmer-trace/main/assets/demo.gif" alt="shimmer-trace demo" width="720" />
+</p>
+
 ---
 
 Most skeleton libraries make you **hand-draw** a skeleton that matches your UI.
@@ -38,7 +42,7 @@ It renders your real component invisibly, traces every element's exact position 
 - **Auto-tracing** — Measures real DOM layout. No manual skeleton code.
 - **Zero CLS** — Container layout preserved. Default `preserveBackground` keeps card backgrounds, borders, and padding visible underneath the shimmer.
 - **Synchronized animation** — One overlay, one wave. All skeletons animate in perfect sync.
-- **8 animation styles** — `wave`, `pulse`, `shine`, `glow`, `ripple`.
+- **5 animation styles** — `wave`, `pulse`, `shine`, `glow`, `gradient`.
 - **List mode** — `dummyLength` clones your list items for skeleton lists, with template caching.
 - **Suspense-native** — `ShimmerSuspense` wraps any suspended component with no `loading` prop.
 - **Factory pattern** — `createShimmer` pre-bakes your config. Use it like a component everywhere.
@@ -92,7 +96,7 @@ The core component. Wrap anything with it.
 ```tsx
 <Shimmer
 	loading={boolean} // required — controls shimmer on/off
-	animation="wave" // 'wave' | 'pulse' | 'breathe'
+	animation="wave" // 'wave' | 'pulse' | 'shine' | 'glow' | 'gradient'
 	baseColor="#e0e0e0" // skeleton base color
 	highlightColor="#f5f5f5" // shimmer highlight color
 	speed={1.5} // animation duration in seconds
@@ -106,18 +110,19 @@ The core component. Wrap anything with it.
 </Shimmer>
 ```
 
-| Prop              | Type                             | Default     | Description                                  |
-| ----------------- | -------------------------------- | ----------- | -------------------------------------------- |
-| `loading`         | `boolean`                        | `false`     | Enables the shimmer skeleton                 |
-| `animation`       | `'wave' \| 'pulse' \| 'breathe'` | `'wave'`    | Animation style                              |
-| `baseColor`       | `string`                         | `'#e0e0e0'` | Base skeleton color                          |
-| `highlightColor`  | `string`                         | `'#f5f5f5'` | Shimmer highlight color                      |
-| `speed`           | `number`                         | `1.5`       | Animation speed in seconds                   |
-| `borderRadius`    | `string`                         | auto        | Override border-radius on all blocks         |
-| `dummyLength`     | `number`                         | —           | Enables list mode (see below)                |
-| `stopPropagation` | `boolean`                        | `false`     | Force master renderer, ignore parent context |
-| `className`       | `string`                         | —           | Class on the container `<div>`               |
-| `style`           | `CSSProperties`                  | —           | Inline styles on the container `<div>`       |
+| Prop                 | Type                                                   | Default     | Description                                         |
+| -------------------- | ------------------------------------------------------ | ----------- | --------------------------------------------------- |
+| `loading`            | `boolean`                                              | `false`     | Enables the shimmer skeleton                        |
+| `animation`          | `'wave' \| 'pulse' \| 'shine' \| 'glow' \| 'gradient'` | `'wave'`    | Animation style                                     |
+| `preserveBackground` | `boolean`                                              | `true`      | Keep card backgrounds/borders visible while loading |
+| `baseColor`          | `string`                                               | `'#e0e0e0'` | Base skeleton color                                 |
+| `highlightColor`     | `string`                                               | `'#f5f5f5'` | Shimmer highlight color                             |
+| `speed`              | `number`                                               | `1.5`       | Animation speed in seconds                          |
+| `borderRadius`       | `string`                                               | auto        | Override border-radius on all blocks                |
+| `dummyLength`        | `number`                                               | —           | Enables list mode (see below)                       |
+| `stopPropagation`    | `boolean`                                              | `false`     | Force master renderer, ignore parent context        |
+| `className`          | `string`                                               | —           | Class on the container `<div>`                      |
+| `style`              | `CSSProperties`                                        | —           | Inline styles on the container `<div>`              |
 
 ---
 
@@ -370,15 +375,15 @@ Fine-tune what gets traced with data attributes:
 
 ## How It Works
 
-1. **Render invisible** — `Shimmer` renders children with `visibility: hidden` (not `display: none`), preserving full layout without visual flash.
+1. **Render real DOM** — `Shimmer` renders children normally. With `preserveBackground` (default), CSS rules hide text (`color: transparent`) and media (`opacity: 0`) on leaf elements while keeping container backgrounds, borders, and padding fully visible. Layout stays identical — zero CLS.
 
 2. **Walk the DOM** — `useTrace` recursively traverses the container, collecting every traceable element: headings, paragraphs, images, inputs, buttons, and leaf nodes with visible dimensions.
 
 3. **Measure everything** — Each element is measured with `getBoundingClientRect()` relative to the master container, capturing position, size, and computed `border-radius`.
 
-4. **Build the overlay** — A single `<svg>` element is absolutely positioned over the container. Each traced element becomes a `<rect>` in an SVG mask, clipping the shimmer gradient to the exact shape of your UI.
+4. **Build the overlay** — One absolutely-positioned `<div>` is rendered per traced rect, sized and positioned to match exactly. For sweep animations (`wave`, `shine`), each block also gets a gradient layer that spans the full container width — the highlight sweeps across all blocks in perfect sync.
 
-5. **Animate in sync** — One gradient animates across the entire overlay. All skeleton blocks shimmer together — no timing drift between cards.
+5. **ResizeObserver** — Container resize triggers an automatic re-trace, so the skeleton stays pixel-perfect on responsive layouts.
 
 6. **Re-trace on resize** — `ResizeObserver` watches the container and re-measures on every resize, keeping skeletons accurate at any screen size.
 
