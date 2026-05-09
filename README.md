@@ -73,13 +73,13 @@ pnpm add shimmer-trace
 import { Shimmer } from "shimmer-trace";
 
 function ProfilePage() {
-	const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-	return (
-		<Shimmer loading={loading}>
-			<UserCard />
-		</Shimmer>
-	);
+  return (
+    <Shimmer loading={loading}>
+      <UserCard />
+    </Shimmer>
+  );
 }
 ```
 
@@ -95,18 +95,18 @@ The core component. Wrap anything with it.
 
 ```tsx
 <Shimmer
-	loading={boolean} // required — controls shimmer on/off
-	animation="wave" // 'wave' | 'pulse' | 'shine' | 'glow' | 'gradient'
-	baseColor="#e0e0e0" // skeleton base color
-	highlightColor="#f5f5f5" // shimmer highlight color
-	speed={1.5} // animation duration in seconds
-	borderRadius="4px" // override auto-detected border-radius
-	dummyLength={10} // list mode: number of skeleton items
-	stopPropagation={false} // force this Shimmer to be a master
-	className="my-class" // applied to the container div
-	style={{ display: "flex" }} // merged into container styles
+  loading={boolean}            // required — controls shimmer on/off
+  animation="wave"             // 'wave' | 'pulse' | 'shine' | 'glow' | 'gradient'
+  baseColor="#e0e0e0"          // skeleton base color
+  highlightColor="#f5f5f5"     // shimmer highlight color
+  speed={1.5}                  // animation duration in seconds
+  borderRadius="4px"           // override auto-detected border-radius
+  dummyLength={10}             // list mode: number of skeleton items
+  stopPropagation={false}      // force this Shimmer to be a master
+  className="my-class"         // applied to the container div
+  style={{ display: "flex" }}  // merged into container styles
 >
-	{children}
+  {children}
 </Shimmer>
 ```
 
@@ -136,20 +136,20 @@ Wrap any component — shimmer-trace handles the rest.
 import { Shimmer } from "shimmer-trace";
 
 function App() {
-	const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-	return (
-		<Shimmer loading={loading}>
-			<div className="profile-card">
-				<img src={user.avatar} alt="Avatar" />
-				<div>
-					<h3>{user.name}</h3>
-					<span>{user.role}</span>
-					<p>{user.bio}</p>
-				</div>
-			</div>
-		</Shimmer>
-	);
+  return (
+    <Shimmer loading={loading}>
+      <div className="profile-card">
+        <img src={user.avatar} alt="Avatar" />
+        <div>
+          <h3>{user.name}</h3>
+          <span>{user.role}</span>
+          <p>{user.bio}</p>
+        </div>
+      </div>
+    </Shimmer>
+  );
 }
 ```
 
@@ -159,15 +159,15 @@ Works out of the box with inputs, labels, and buttons.
 
 ```tsx
 <Shimmer loading={loading}>
-	<form>
-		<label>Email</label>
-		<input type="email" placeholder="you@example.com" />
+  <form>
+    <label>Email</label>
+    <input type="email" placeholder="you@example.com" />
 
-		<label>Message</label>
-		<textarea placeholder="Your message..." />
+    <label>Message</label>
+    <textarea placeholder="Your message..." />
 
-		<button type="submit">Send</button>
-	</form>
+    <button type="submit">Send</button>
+  </form>
 </Shimmer>
 ```
 
@@ -177,16 +177,16 @@ Loading a list from an API? `dummyLength` clones your list item template to show
 
 ```tsx
 <Shimmer loading={loading} dummyLength={10}>
-	{posts.map((post) => (
-		<div className="post-row" key={post.id}>
-			<img src={post.thumbnail} alt="" />
-			<div>
-				<h4>{post.title}</h4>
-				<span>{post.author}</span>
-			</div>
-			<span className="badge">{post.category}</span>
-		</div>
-	))}
+  {posts.map((post) => (
+    <div className="post-row" key={post.id}>
+      <img src={post.thumbnail} alt="" />
+      <div>
+        <h4>{post.title}</h4>
+        <span>{post.author}</span>
+      </div>
+      <span className="badge">{post.category}</span>
+    </div>
+  ))}
 </Shimmer>
 ```
 
@@ -202,9 +202,9 @@ One `<Shimmer>` wraps multiple cards. One overlay. One perfectly synchronized wa
 
 ```tsx
 <Shimmer loading={loading} style={{ display: "flex", gap: "1rem" }}>
-	<StatCard value="4,821" label="Total Users" />
-	<StatCard value="98.4%" label="Uptime" />
-	<StatCard value="142ms" label="Avg Latency" />
+  <StatCard value="4,821" label="Total Users" />
+  <StatCard value="98.4%" label="Uptime" />
+  <StatCard value="142ms" label="Avg Latency" />
 </Shimmer>
 ```
 
@@ -214,7 +214,7 @@ No separate shimmers per card. One master overlay covers them all — the wave s
 
 ```tsx
 <Shimmer loading={loading} baseColor="#1e1e3a" highlightColor="#2d2d52">
-	<DashboardWidget />
+  <DashboardWidget />
 </Shimmer>
 ```
 
@@ -229,19 +229,19 @@ import { createShimmer } from "shimmer-trace";
 
 // Create a pre-configured Shimmer component
 const DarkShimmer = createShimmer({
-	baseColor: "#1e1e3a",
-	highlightColor: "#2d2d52",
-	animation: "wave",
-	speed: 1.2,
+  baseColor: "#1e1e3a",
+  highlightColor: "#2d2d52",
+  animation: "wave",
+  speed: 1.2,
 });
 
 // Use it like a regular component — just add `loading`
 function App() {
-	return (
-		<DarkShimmer loading={loading}>
-			<UserCard />
-		</DarkShimmer>
-	);
+  return (
+    <DarkShimmer loading={loading}>
+      <UserCard />
+    </DarkShimmer>
+  );
 }
 ```
 
@@ -263,26 +263,26 @@ Pass the same component without data as `template`. Zero shimmer-awareness neede
 
 ```tsx
 function UserCard({ user }) {
-	return (
-		<div className="card">
-			<img src={user.avatar} alt="" />
-			<h3>{user.name}</h3>
-			<p>{user.bio}</p>
-		</div>
-	);
+  return (
+    <div className="card">
+      <img src={user.avatar} alt="" />
+      <h3>{user.name}</h3>
+      <p>{user.bio}</p>
+    </div>
+  );
 }
 
 // Same shape, no data — used as skeleton template
 const UserCardSkeleton = () => (
-	<div className="card">
-		<img src="" alt="" />
-		<h3>&nbsp;</h3>
-		<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
-	</div>
+  <div className="card">
+    <img src="" alt="" />
+    <h3>&nbsp;</h3>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
+  </div>
 );
 
 <ShimmerSuspense template={<UserCardSkeleton />}>
-	<UserCard resource={resource} />
+  <UserCard resource={resource} />
 </ShimmerSuspense>;
 ```
 
@@ -294,22 +294,22 @@ No template needed. The component detects shimmer mode and renders an empty shap
 import { useIsShimmering } from "shimmer-trace";
 
 function UserCard({ resource }) {
-	const isShimmering = useIsShimmering();
+  const isShimmering = useIsShimmering();
 
-	// Skip data fetching in shimmer mode (avoids nested Suspense throw)
-	const user = isShimmering ? null : resource.read();
+  // Skip data fetching in shimmer mode (avoids nested Suspense throw)
+  const user = isShimmering ? null : resource.read();
 
-	return (
-		<div className="card">
-			<img src={user?.avatar ?? ""} alt="" />
-			<h3>{user?.name ?? " "}</h3>
-			<p>{user?.bio ?? "              "}</p>
-		</div>
-	);
+  return (
+    <div className="card">
+      <img src={user?.avatar ?? ""} alt="" />
+      <h3>{user?.name ?? " "}</h3>
+      <p>{user?.bio ?? "              "}</p>
+    </div>
+  );
 }
 
 <ShimmerSuspense>
-	<UserCard resource={resource} />
+  <UserCard resource={resource} />
 </ShimmerSuspense>;
 ```
 
@@ -317,12 +317,12 @@ function UserCard({ resource }) {
 
 ```tsx
 <ShimmerSuspense
-	template={<UserCardSkeleton />}
-	animation="pulse"
-	baseColor="#1e1e3a"
-	highlightColor="#2d2d52"
+  template={<UserCardSkeleton />}
+  animation="pulse"
+  baseColor="#1e1e3a"
+  highlightColor="#2d2d52"
 >
-	<UserCard resource={resource} />
+  <UserCard resource={resource} />
 </ShimmerSuspense>
 ```
 
@@ -334,13 +334,13 @@ function UserCard({ resource }) {
 
 ```tsx
 <Shimmer loading={loading}>
-	<PageHeader>
-		{/* This nested Shimmer contributes its rects to the parent overlay */}
-		<Shimmer loading={loading}>
-			<NavigationMenu />
-		</Shimmer>
-	</PageHeader>
-	<MainContent />
+  <PageHeader>
+    {/* This nested Shimmer contributes its rects to the parent overlay */}
+    <Shimmer loading={loading}>
+      <NavigationMenu />
+    </Shimmer>
+  </PageHeader>
+  <MainContent />
 </Shimmer>
 ```
 
@@ -348,12 +348,12 @@ Use `stopPropagation` to force an independent shimmer:
 
 ```tsx
 <Shimmer loading={outerLoading}>
-	<Sidebar />
+  <Sidebar />
 
-	{/* Independent shimmer — own overlay, own animation */}
-	<Shimmer loading={innerLoading} stopPropagation>
-		<Feed />
-	</Shimmer>
+  {/* Independent shimmer — own overlay, own animation */}
+  <Shimmer loading={innerLoading} stopPropagation>
+    <Feed />
+  </Shimmer>
 </Shimmer>
 ```
 
@@ -395,11 +395,11 @@ Full types exported:
 
 ```ts
 import type {
-	ShimmerProps, // Props for <Shimmer>
-	ShimmerConfig, // Config options (colors, speed, animation)
-	ShimmerRect, // Measured element rectangle
-	AnimationType, // 'wave' | 'pulse' | 'breathe'
-	ShimmerSuspenseProps,
+  ShimmerProps,          // Props for <Shimmer>
+  ShimmerConfig,         // Config options (colors, speed, animation)
+  ShimmerRect,           // Measured element rectangle
+  AnimationType,         // 'wave' | 'pulse' | 'breathe'
+  ShimmerSuspenseProps,
 } from "shimmer-trace";
 ```
 
@@ -421,4 +421,4 @@ import type {
 
 ## License
 
-ISC — [Jeet Vora](https://github.com/jeetvora331)
+MIT — [Jeet Vora](https://github.com/jeetvora331)
