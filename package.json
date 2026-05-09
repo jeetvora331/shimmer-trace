@@ -1,6 +1,6 @@
 {
 	"name": "shimmer-trace",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"description": "High-performance React skeleton loaders that automatically trace your UI dimensions. Synchronized animations, zero CLS, and one-line implementation.",
 	"main": "./dist/index.cjs",
 	"module": "./dist/index.mjs",
