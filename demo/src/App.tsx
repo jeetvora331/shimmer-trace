@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
 	Shimmer,
 	createShimmer,
@@ -64,7 +64,7 @@ function UserCardA({
 		<div className="profile-card">
 			<img
 				className="profile-avatar"
-				src="https://i.pravatar.cc/160?img=5"
+				src="https://xsgames.co/randomusers/avatar.php?g=male"
 				alt="Avatar"
 			/>
 			<div className="profile-info">
@@ -81,7 +81,7 @@ const UserCardATemplate = () => (
 	<div className="profile-card">
 		<img
 			className="profile-avatar"
-			src="https://i.pravatar.cc/160?img=5"
+			src="https://xsgames.co/randomusers/avatar.php?g=male"
 			alt=""
 		/>
 		<div className="profile-info">
@@ -109,7 +109,7 @@ function UserCardB({
 		<div className="profile-card">
 			<img
 				className="profile-avatar"
-				src="https://i.pravatar.cc/160?img=8"
+				src="https://xsgames.co/randomusers/avatar.php?g=male"
 				alt="Avatar"
 			/>
 			<div className="profile-info">
@@ -126,12 +126,7 @@ function UserCardB({
 function SuspenseDemoSection({
 	shimmerAnimation,
 }: {
-	shimmerAnimation:
-		| "wave"
-		| "pulse"
-		| "shine"
-		| "glow"
-		| "gradient";
+	shimmerAnimation: "wave" | "pulse" | "shine" | "glow" | "gradient";
 }) {
 	const resourceA = useMemo(() => createResource(fakeUser(2000)), []);
 	const resourceB = useMemo(() => createResource(fakeUser(2500)), []);
@@ -180,12 +175,7 @@ function FlexLayoutDemo({
 	animation,
 }: {
 	loading: boolean;
-	animation:
-		| "wave"
-		| "pulse"
-		| "shine"
-		| "glow"
-		| "gradient";
+	animation: "wave" | "pulse" | "shine" | "glow" | "gradient";
 }) {
 	return (
 		<Shimmer
@@ -220,17 +210,40 @@ const PulseShimmer = createShimmer({
 	speed: 1.2,
 });
 
+function FruitItem({ fruit }: { fruit: string }) {
+	return (
+		<div className="list-item">
+			<div className="list-item-icon">🍎</div>
+			<div className="list-item-content">
+				<h4>{fruit}</h4>
+				<p>A delicious fruit</p>
+			</div>
+			<span className="list-item-badge">Fresh</span>
+		</div>
+	);
+}
+
+const FRUIT_DATA = [
+	"Apple",
+	"Banana",
+	"Cherry",
+	"Dragon Fruit",
+	"Elderberry",
+	"Fig",
+	"Grape",
+	"Honeydew",
+	"Kiwi",
+	"Lemon",
+];
+
 export default function App() {
 	const [loading, setLoading] = useState(true);
 	const [animation, setAnimation] = useState<
-		| "wave"
-		| "pulse"
-		| "shine"
-		| "glow"
-		| "gradient"
+		"wave" | "pulse" | "shine" | "glow" | "gradient"
 	>("wave");
 	const [suspenseKey, setSuspenseKey] = useState(0);
-	const [fruits] = useState<string[]>([]);
+	const [fruits, setFruits] = useState<string[]>([]);
+	console.log("📢>>fruits: ", fruits);
 
 	return (
 		<div className="app">
@@ -244,13 +257,19 @@ export default function App() {
 			<div className="controls">
 				<button
 					className={loading ? "active" : ""}
-					onClick={() => setLoading(true)}
+					onClick={() => {
+						setLoading(true);
+						setFruits([]);
+					}}
 				>
 					⏳ Loading
 				</button>
 				<button
 					className={!loading ? "active" : ""}
-					onClick={() => setLoading(false)}
+					onClick={() => {
+						setLoading(false);
+						setFruits(FRUIT_DATA);
+					}}
 				>
 					✅ Loaded
 				</button>
@@ -293,12 +312,12 @@ export default function App() {
 					<div className="profile-card">
 						<img
 							className="profile-avatar"
-							src="https://i.pravatar.cc/160?img=12"
+							src={`https://api.dicebear.com/9.x/avataaars/svg?seed=${crypto.randomUUID()}`}
 							alt="Avatar"
 						/>
 						<div className="profile-info">
 							<h3>Jeet Vora</h3>
-							<span className="subtitle">Full-Stack Developer</span>
+							<span className="subtitle">Frontend Developer</span>
 							<p>
 								Building beautiful interfaces with React, TypeScript, and a
 								passion for smooth UX. Creator of shimmer-trace.
@@ -310,7 +329,7 @@ export default function App() {
 
 			{/* ─── Demo 2: Contact Form ─── */}
 			<div className="demo-section">
-				<h2>Contact Form</h2>
+				<h2>Contact Form - Without background preservation</h2>
 				<DarkShimmer
 					loading={loading}
 					animation={animation}
@@ -345,11 +364,13 @@ export default function App() {
 
 			{/* ─── Demo 3: Fruit List (inline mapping) ─── */}
 			<div className="demo-section">
-				<h2>List Skeleton — Inline Dummy Data Mapping</h2>
+				<h2>
+					List Skeleton — <code>as</code> & <code>dummyLength</code> Props
+				</h2>
 				<p className="demo-description">
-					<code>fruits=[]</code> at first render. If you don't want to extract a
-					component or use a <code>template</code> prop, you can simply map over
-					dummy data to trace the structure!
+					The <code>as</code> prop allows you to specify a component to render N
+					times (via <code>dummyLength</code>) as a skeleton shape. This keeps
+					your loading logic separate from your real data mapping.
 				</p>
 				<div className="list-demo">
 					<Shimmer
@@ -357,19 +378,13 @@ export default function App() {
 						animation={animation}
 						baseColor="#1e1e3a"
 						highlightColor="#2d2d52"
+						as={FruitItem}
+						dummyLength={10}
+						dummyData={{ fruit: "Loading fruit" }}
 					>
-						{(fruits.length > 0 ? fruits : Array(10).fill("Loading fruit")).map(
-							(fruit, i) => (
-								<div className="list-item" key={i}>
-									<div className="list-item-icon">🍎</div>
-									<div className="list-item-content">
-										<h4>{fruit}</h4>
-										<p>A delicious fruit</p>
-									</div>
-									<span className="list-item-badge">Fresh</span>
-								</div>
-							),
-						)}
+						{fruits.map((fruit, i) => (
+							<FruitItem fruit={fruit} key={i} />
+						))}
 					</Shimmer>
 				</div>
 			</div>
@@ -418,7 +433,7 @@ export default function App() {
 					<div className="profile-card">
 						<img
 							className="profile-avatar"
-							src="https://i.pravatar.cc/160?img=32"
+							src="https://i.pravatar.cc/80"
 							alt="Avatar"
 						/>
 						<div className="profile-info">

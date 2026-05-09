@@ -69,7 +69,7 @@ body {
 }
 
 .controls button {
-  padding: 0.7rem 1.5rem;
+  padding: 0.5rem 1em;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--bg-secondary);
