@@ -372,21 +372,20 @@ export default function App() {
 					times (via <code>dummyLength</code>) as a skeleton shape. This keeps
 					your loading logic separate from your real data mapping.
 				</p>
-				<div className="list-demo">
-					<Shimmer
-						loading={loading}
-						animation={animation}
-						baseColor="#1e1e3a"
-						highlightColor="#2d2d52"
-						as={FruitItem}
-						dummyLength={10}
-						dummyData={{ fruit: "Loading fruit" }}
-					>
-						{fruits.map((fruit, i) => (
-							<FruitItem fruit={fruit} key={i} />
-						))}
-					</Shimmer>
-				</div>
+				<Shimmer
+					loading={loading}
+					animation={animation}
+					baseColor="#1e1e3a"
+					highlightColor="#2d2d52"
+					as={FruitItem}
+					dummyLength={10}
+					dummyData={{ fruit: "Loading fruit" }}
+					className="list-demo"
+				>
+					{fruits.map((fruit, i) => (
+						<FruitItem fruit={fruit} key={i} />
+					))}
+				</Shimmer>
 			</div>
 
 			{/* ─── Demo 4: Flex Layout (style passthrough) ─── */}
