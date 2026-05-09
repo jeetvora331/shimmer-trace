@@ -10,6 +10,8 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-ready-3178c6)](https://www.typescriptlang.org)
 [![license](https://img.shields.io/npm/l/shimmer-trace)](./LICENSE)
 
+**[🚀 Live Demo](https://jeetvora331.github.io/shimmer-trace/)**
+
 <p align="center">
   <img src="https://raw.githubusercontent.com/jeetvora331/shimmer-trace/main/assets/demo.gif" alt="shimmer-trace demo" width="720" />
 </p>
