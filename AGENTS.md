@@ -26,13 +26,16 @@ npm install shimmer-trace
 
 ```ts
 // Components
-import { Shimmer }          from 'shimmer-trace'; // main component
-import { ShimmerSuspense }  from 'shimmer-trace'; // Suspense boundary with auto-skeleton
-import { createShimmer }    from 'shimmer-trace'; // factory — bakes config into component
+import { Shimmer } from 'shimmer-trace'; // main component
+import { ShimmerSuspense } from 'shimmer-trace'; // Suspense boundary with auto-skeleton
+import { createShimmer } from 'shimmer-trace'; // factory — bakes config into component
 
 // Hooks
-import { useIsShimmering }  from 'shimmer-trace'; // true when inside ShimmerSuspense fallback
-import { useShimmerContext } from 'shimmer-trace'; // raw context — advanced use only
+import { useIsShimmering } from 'shimmer-trace'; // true when inside ShimmerSuspense fallback
+import { useShimmerContext } from 'shimmer-trace'; // raw context value — advanced use only
+
+// Raw context (rarely needed — only if you build a custom Master/Reporter outside <Shimmer>)
+import { ShimmerContext } from 'shimmer-trace';
 
 // Types
 import type {
@@ -285,7 +288,7 @@ Use when: multiple sub-sections exist but you want one synchronized shimmer acro
 </Shimmer>
 ```
 
-**Key rule:** inner `<Shimmer>` without `loading` prop inside an outer `<Shimmer>` auto-becomes a Reporter. It measures its own subtree and sends rects to the Master. One overlay covers everything.
+**Key rule:** Any nested `<Shimmer>` inside an outer `<Shimmer>` auto-becomes a Reporter, regardless of whether it has its own `loading` prop. The Reporter measures its own subtree, sends rects to the Master, and ignores its own `loading` prop — Master's `loading` controls everything. One overlay covers all. To break out and create an independent Master, use `stopPropagation={true}` (see Pattern 8).
 
 ---
 
@@ -323,25 +326,28 @@ Use when: component uses `use()`, `useSuspenseQuery`, or similar — throws a Pr
 
 ### Option A — `template` prop (component has zero shimmer awareness)
 
+Reuse the same component as its own template — pass template props so it renders DOM without suspending. No duplicate skeleton component, no `&nbsp;` width padding.
+
 ```tsx
 import { ShimmerSuspense } from 'shimmer-trace';
 
-// Skeleton template: same structure, no real data
-const UserCardTemplate = () => (
-  <div className="profile-card">
-    <img className="avatar" src="" alt="" />
-    <div className="info">
-      <h3>&nbsp;</h3>
-      <span>&nbsp;</span>
-      <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
-    </div>
-  </div>
-);
+// Template data: same shape the real component expects, no fetch
+const userTemplate = {
+  name:   'xxxxxxxxxxxxxx',
+  role:   'xxxxxxxxxx',
+  bio:    'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  avatar: '',
+};
 
-<ShimmerSuspense template={<UserCardTemplate />} animation="wave">
+<ShimmerSuspense template={<UserCard user={userTemplate} />} animation="wave">
   <UserCard />   {/* throws Promise while fetching — shimmer shows automatically */}
 </ShimmerSuspense>
 ```
+
+**Why a `template` prop at all (not just `dummyData` like `<Shimmer>`):** the real `<UserCard />` throws a Promise during render — it never produces DOM until data resolves. `cloneElement` + props merge doesn't help because the cloned element still suspends. `template` renders a separate, non-suspending instance (same component, template data) so Shimmer gets real DOM to trace.
+
+**Rule:** template should render synchronously. If you pass `<UserCard resource={realResource} />` as template, it'll suspend inside the fallback and skeleton goes empty. Either pass template data props (above) or use Option B.
+
 
 ### Option B — `useIsShimmering` hook (component skips fetch in shimmer mode)
 

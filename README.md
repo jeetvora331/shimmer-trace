@@ -45,7 +45,9 @@ It renders your real component invisibly, traces every element's exact position 
 - **Zero CLS** — Container layout preserved. Default `preserveBackground` keeps card backgrounds, borders, and padding visible underneath the shimmer.
 - **Synchronized animation** — One overlay, one wave. All skeletons animate in perfect sync.
 - **5 animation styles** — `wave`, `pulse`, `shine`, `glow`, `gradient`.
-- **List mode** — `dummyLength` clones your list items for skeleton lists, with template caching.
+- **Dummy data injection** — `dummyData` clones children with template props so skeletons render with realistic shape, no `data || fallback` ternaries in JSX.
+- **List mode** — `dummyLength` clones the first child N times for skeleton lists, even when your array is empty.
+- **Component templates** — `as={MovieCard}` generates skeletons from a component + `dummyData`, no children required.
 - **Suspense-native** — `ShimmerSuspense` wraps any suspended component with no `loading` prop.
 - **Factory pattern** — `createShimmer` pre-bakes your config. Use it like a component everywhere.
 - **Composable** — Nested `Shimmer` components bubble their rects up to a single master overlay.
@@ -87,6 +89,19 @@ function ProfilePage() {
 
 That's it. `shimmer-trace` walks the DOM inside `<UserCard />`, finds every text node, image, input, and button, and draws a shimmer skeleton that matches it exactly.
 
+Need realistic shape before real data arrives? Pass a template via `dummyData`:
+
+```tsx
+<Shimmer
+  loading={loading}
+  dummyData={{ user: { name: "dummy_user", role: "dummy_role", avatar: "" } }}
+>
+  <UserCard user={user} />
+</Shimmer>
+```
+
+See [Examples](#examples) for `dummyLength` (list mode) and `as` (component template) patterns.
+
 ---
 
 ## API Reference
@@ -103,7 +118,10 @@ The core component. Wrap anything with it.
   highlightColor="#f5f5f5"     // shimmer highlight color
   speed={1.5}                  // animation duration in seconds
   borderRadius="4px"           // override auto-detected border-radius
+  preserveBackground={true}    // keep card bg/borders visible under shimmer
+  dummyData={{ user: tpl }}    // inject template props into children
   dummyLength={10}             // list mode: number of skeleton items
+  as={UserCard}                // component template — generate skeletons from a component
   stopPropagation={false}      // force this Shimmer to be a master
   className="my-class"         // applied to the container div
   style={{ display: "flex" }}  // merged into container styles
@@ -112,19 +130,21 @@ The core component. Wrap anything with it.
 </Shimmer>
 ```
 
-| Prop                 | Type                                                   | Default     | Description                                         |
-| -------------------- | ------------------------------------------------------ | ----------- | --------------------------------------------------- |
-| `loading`            | `boolean`                                              | `false`     | Enables the shimmer skeleton                        |
-| `animation`          | `'wave' \| 'pulse' \| 'shine' \| 'glow' \| 'gradient'` | `'wave'`    | Animation style                                     |
-| `preserveBackground` | `boolean`                                              | `true`      | Keep card backgrounds/borders visible while loading |
-| `baseColor`          | `string`                                               | `'#e0e0e0'` | Base skeleton color                                 |
-| `highlightColor`     | `string`                                               | `'#f5f5f5'` | Shimmer highlight color                             |
-| `speed`              | `number`                                               | `1.5`       | Animation speed in seconds                          |
-| `borderRadius`       | `string`                                               | auto        | Override border-radius on all blocks                |
-| `dummyLength`        | `number`                                               | —           | Enables list mode (see below)                       |
-| `stopPropagation`    | `boolean`                                              | `false`     | Force master renderer, ignore parent context        |
-| `className`          | `string`                                               | —           | Class on the container `<div>`                      |
-| `style`              | `CSSProperties`                                        | —           | Inline styles on the container `<div>`              |
+| Prop                 | Type                                                   | Default     | Description                                                              |
+| -------------------- | ------------------------------------------------------ | ----------- | ------------------------------------------------------------------------ |
+| `loading`            | `boolean`                                              | `false`     | Enables the shimmer skeleton                                             |
+| `animation`          | `'wave' \| 'pulse' \| 'shine' \| 'glow' \| 'gradient'` | `'wave'`    | Animation style                                                          |
+| `preserveBackground` | `boolean`                                              | `true`      | Keep card backgrounds/borders visible while loading                      |
+| `baseColor`          | `string`                                               | `'#e0e0e0'` | Base skeleton color                                                      |
+| `highlightColor`     | `string`                                               | `'#f5f5f5'` | Shimmer highlight color                                                  |
+| `speed`              | `number`                                               | `1.5`       | Animation speed in seconds                                               |
+| `borderRadius`       | `string`                                               | auto        | Override border-radius on all blocks                                     |
+| `dummyData`          | `Record<string, any>`                                  | —           | Props merged into each child while loading (template data, no real API)  |
+| `dummyLength`        | `number`                                               | —           | List mode — clones first child N times (see below)                       |
+| `as`                 | `ComponentType<any>`                                   | —           | Component template — renders `dummyLength` × `<as {...dummyData} />`     |
+| `stopPropagation`    | `boolean`                                              | `false`     | Force master renderer, ignore parent context                             |
+| `className`          | `string`                                               | —           | Class on the container `<div>`                                           |
+| `style`              | `CSSProperties`                                        | —           | Inline styles on the container `<div>`                                   |
 
 ---
 
@@ -173,32 +193,74 @@ Works out of the box with inputs, labels, and buttons.
 </Shimmer>
 ```
 
-### 3. List Skeleton with `dummyLength`
+### 3. Skeleton Shape with `dummyData`
 
-Loading a list from an API? `dummyLength` clones your list item template to show the right number of skeleton rows — even when the array is empty.
+No more `data?.name ?? 'Loading...'` ternaries scattered through your component. Pass a template object via `dummyData` and Shimmer clones each child with those props merged on top of its own.
 
 ```tsx
-<Shimmer loading={loading} dummyLength={10}>
+const userTemplate = {
+  name: "",
+  role: "",
+  avatar: "",
+  bio: "",
+};
+
+<Shimmer loading={loading} dummyData={{ user: userTemplate }}>
+  <UserCard user={user} />
+</Shimmer>;
+```
+
+While `loading=true`, `<UserCard>` is cloned with `user={userTemplate}` — giving the shimmer realistic shape even before any data arrives. Once `loading=false`, real props pass through untouched.
+
+### 4. List Skeleton with `dummyLength` + `dummyData`
+
+Loading a list from an API? `dummyLength` clones a template N times so the skeleton shows the right number of rows — even when your array is empty during the first fetch.
+
+```tsx
+const postTemplate = {
+  title: "xxxxxxxxxxxxxxxxxxxx",
+  author: "xxxxxxxx",
+  category: "xxxxx",
+  thumbnail: "",
+};
+
+<Shimmer
+  loading={loading}
+  dummyLength={10}
+  dummyData={{ post: postTemplate }}
+>
   {posts.map((post) => (
-    <div className="post-row" key={post.id}>
-      <img src={post.thumbnail} alt="" />
-      <div>
-        <h4>{post.title}</h4>
-        <span>{post.author}</span>
-      </div>
-      <span className="badge">{post.category}</span>
-    </div>
+    <PostRow post={post} key={post.id} />
   ))}
-</Shimmer>
+</Shimmer>;
 ```
 
 **How it works:**
 
-- `loading=false` → renders your `.map()` output normally
-- `loading=true` → grabs the first list item, clones it `dummyLength` times, and shimmers it
-- If your array is empty during loading (e.g., `posts = []`), shimmer-trace uses a **cached template** from the previous render — the skeleton always matches your real layout
+- `loading=false` → renders your `.map()` output normally.
+- `loading=true` with children → grabs the first child, merges `dummyData` into its props, clones it `dummyLength` times.
+- `loading=true` with empty array → use `as` (next example) so there's a component to clone even with no children.
 
-### 4. Synchronized Flex Layout
+### 5. Component Template with `as`
+
+When your array is empty on first render (e.g. `posts = []` before fetch), there's no child to clone. Use `as` to point Shimmer at the component directly — it renders `dummyLength` instances of `<as {...dummyData} />`.
+
+```tsx
+<Shimmer
+  loading={loading}
+  as={PostRow}
+  dummyData={{ post: postTemplate }}
+  dummyLength={10}
+>
+  {posts.map((post) => (
+    <PostRow post={post} key={post.id} />
+  ))}
+</Shimmer>
+```
+
+Cold-start safe — no children needed during loading. Children render normally once `loading=false`.
+
+### 6. Synchronized Flex Layout
 
 One `<Shimmer>` wraps multiple cards. One overlay. One perfectly synchronized wave.
 
@@ -212,7 +274,7 @@ One `<Shimmer>` wraps multiple cards. One overlay. One perfectly synchronized wa
 
 No separate shimmers per card. One master overlay covers them all — the wave sweeps the entire row in sync.
 
-### 5. Custom Colors (Dark Mode)
+### 7. Custom Colors (Dark Mode)
 
 ```tsx
 <Shimmer loading={loading} baseColor="#1e1e3a" highlightColor="#2d2d52">
@@ -261,7 +323,7 @@ import { ShimmerSuspense } from "shimmer-trace";
 
 ### Option A: Explicit template (recommended)
 
-Pass the same component without data as `template`. Zero shimmer-awareness needed in your component.
+Reuse the same component as its own skeleton — pass it through `template` with template props. No duplicate skeleton component, no `&nbsp;` width hacks.
 
 ```tsx
 function UserCard({ user }) {
@@ -274,19 +336,19 @@ function UserCard({ user }) {
   );
 }
 
-// Same shape, no data — used as skeleton template
-const UserCardSkeleton = () => (
-  <div className="card">
-    <img src="" alt="" />
-    <h3>&nbsp;</h3>
-    <p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p>
-  </div>
-);
+// Template data — same shape as real user, no fetch
+const userTemplate = {
+  name: "xxxxxxxxxxxxxx",
+  bio: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+  avatar: "",
+};
 
-<ShimmerSuspense template={<UserCardSkeleton />}>
+<ShimmerSuspense template={<UserCard user={userTemplate} />}>
   <UserCard resource={resource} />
 </ShimmerSuspense>;
 ```
+
+Why a template prop at all (not just `dummyData` like `<Shimmer>`)? Because the real `<UserCard resource={resource} />` throws a Promise during render — it never produces DOM until data resolves. The library can't merge props into a component that's mid-suspend. Rendering a separate, non-suspending instance (same component, template data) gives Shimmer real DOM to trace.
 
 ### Option B: `useIsShimmering` hook
 
@@ -400,8 +462,21 @@ import type {
   ShimmerProps,          // Props for <Shimmer>
   ShimmerConfig,         // Config options (colors, speed, animation)
   ShimmerRect,           // Measured element rectangle
-  AnimationType,         // 'wave' | 'pulse' | 'breathe'
-  ShimmerSuspenseProps,
+  AnimationType,         // 'wave' | 'pulse' | 'shine' | 'glow' | 'gradient'
+  ShimmerSuspenseProps,  // Props for <ShimmerSuspense>
+} from "shimmer-trace";
+```
+
+Runtime exports:
+
+```ts
+import {
+  Shimmer,
+  createShimmer,
+  ShimmerSuspense,
+  ShimmerContext,
+  useShimmerContext,
+  useIsShimmering,
 } from "shimmer-trace";
 ```
 
@@ -409,15 +484,16 @@ import type {
 
 ## Comparison
 
-|                        | shimmer-trace    | react-loading-skeleton | MUI Skeleton   |
-| ---------------------- | ---------------- | ---------------------- | -------------- |
-| Manual skeleton code   | ❌ None          | ✅ Required            | ✅ Required    |
-| Matches real layout    | ✅ Automatically | ⚠️ Manual              | ⚠️ Manual      |
-| List mode              | ✅ `dummyLength` | ❌                     | ❌             |
-| Suspense support       | ✅ Native        | ❌                     | ❌             |
-| Synchronized animation | ✅ One overlay   | ⚠️ Per-element         | ⚠️ Per-element |
-| Zero layout shift      | ✅               | ⚠️                     | ⚠️             |
-| Bundle size            | ~3kb             | ~5kb                   | ~12kb          |
+|                        | shimmer-trace             | react-loading-skeleton | MUI Skeleton   |
+| ---------------------- | ------------------------- | ---------------------- | -------------- |
+| Manual skeleton code   | ❌ None                   | ✅ Required            | ✅ Required    |
+| Matches real layout    | ✅ Automatically          | ⚠️ Manual              | ⚠️ Manual      |
+| Template data          | ✅ `dummyData`            | ❌                     | ❌             |
+| List mode              | ✅ `dummyLength` / `as`   | ❌                     | ❌             |
+| Suspense support       | ✅ Native                 | ❌                     | ❌             |
+| Synchronized animation | ✅ One overlay            | ⚠️ Per-element         | ⚠️ Per-element |
+| Zero layout shift      | ✅                        | ⚠️                     | ⚠️             |
+| Bundle size            | ~3kb                      | ~5kb                   | ~12kb          |
 
 ---
 
