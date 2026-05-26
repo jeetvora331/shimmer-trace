@@ -201,6 +201,201 @@ function FlexLayoutDemo({
 	);
 }
 
+// ─── Fixed-position demo ─────────────────────────────────────────────────────
+//
+// Three tabs covering the v1.2.0 position:fixed handling:
+//   1. Auto skip — fixed element silently dropped from trace, one-shot
+//      console.warn fires in dev.
+//   2. Force trace — data-shimmer attribute overrides the skip. Block
+//      appears at scroll=0 and drifts as the page scrolls (this is the
+//      old default behavior, kept available as opt-in).
+//   3. Inside fixed — recommended workaround: render a nested <Shimmer>
+//      inside the fixed element so the overlay shares its coordinate
+//      space and stays aligned at any scroll offset.
+
+type FixedTab = "skip" | "force" | "nested";
+
+function FixedPosDemo({
+	animation,
+	loading,
+}: {
+	animation: "wave" | "pulse" | "shine" | "glow" | "gradient";
+	loading: boolean;
+}) {
+	const [tab, setTab] = useState<FixedTab>("skip");
+	const [visible, setVisible] = useState(false);
+
+	const fixedStyle: React.CSSProperties = {
+		position: "fixed",
+		top: 224,
+		right: 24,
+		width: 280,
+		padding: "16px 18px",
+		border: "1px solid var(--border)",
+		borderRadius: "var(--radius)",
+		zIndex: 50,
+		boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
+		background: "linear-gradient(135deg, #6c63ff, #e040fb, #00bcd4)",
+	};
+
+	const inlineCard = (
+		<div className="profile-card">
+			<div className="profile-info">
+				<h3>Inline content</h3>
+				<span className="subtitle">Normal flow</span>
+				<p>
+					Sits in normal document flow → traced as usual. Compare with the
+					floating widget pinned bottom-right.
+				</p>
+			</div>
+		</div>
+	);
+
+	const fixedWidgetContent = (label: string) => (
+		<>
+			<strong style={{ color: "var(--text-primary)", fontSize: "0.95rem" }}>
+				Fixed widget
+			</strong>
+			<p
+				style={{
+					margin: "6px 0 0",
+					fontSize: "0.8rem",
+					color: "#fff",
+					lineHeight: 1.4,
+				}}
+			>
+				{label}
+			</p>
+		</>
+	);
+
+	return (
+		<>
+			<div className="fixed-toggle-row">
+				<button
+					className={`fixed-toggle-btn ${visible ? "active" : ""}`}
+					onClick={() => setVisible((v) => !v)}
+				>
+					{visible ? "✕ Hide fixed widget" : "▸ Show fixed widget"}
+				</button>
+				<span className="fixed-toggle-status">
+					{visible
+						? "Widget pinned bottom-right →"
+						: "Click to spawn floating widget for the demo"}
+				</span>
+			</div>
+
+			{!visible ? (
+				<div className="fixed-hint">
+					When you toggle the widget on, it appears as a floating card in the
+					bottom-right corner. Use the three tabs to switch between:
+					<ul style={{ margin: "0.6rem 0 0 1.25rem", padding: 0 }}>
+						<li>
+							<strong>Auto skip</strong> (default) — widget gets no shimmer
+							block. Console warns once per Master.
+						</li>
+						<li>
+							<strong>Force trace</strong> — opt-in via{" "}
+							<code>data-shimmer</code>. Block exists, drifts on scroll.
+						</li>
+						<li>
+							<strong>Inside fixed</strong> — nested{" "}
+							<code>&lt;Shimmer&gt;</code> inside the widget. Stays glued at any
+							scroll offset.
+						</li>
+					</ul>
+				</div>
+			) : (
+				<>
+					<div className="fixed-tabs">
+						<button
+							className={tab === "skip" ? "active" : ""}
+							onClick={() => setTab("skip")}
+						>
+							1. Auto skip (default)
+						</button>
+						<button
+							className={tab === "force" ? "active" : ""}
+							onClick={() => setTab("force")}
+						>
+							2. Force trace — drifts on scroll
+						</button>
+						<button
+							className={tab === "nested" ? "active" : ""}
+							onClick={() => setTab("nested")}
+						>
+							3. Inside fixed — aligned
+						</button>
+					</div>
+
+					{tab === "skip" && (
+						<DarkShimmer loading={loading} animation={animation}>
+							<div style={fixedStyle}>
+								{fixedWidgetContent(
+									"Auto-skipped from the trace. No shimmer block. Check the console.",
+								)}
+							</div>
+							{inlineCard}
+						</DarkShimmer>
+					)}
+
+					{tab === "force" && (
+						<DarkShimmer loading={loading} animation={animation}>
+							<div data-shimmer style={fixedStyle}>
+								{fixedWidgetContent(
+									"Force-traced via data-shimmer. Scroll the page to see drift.",
+								)}
+							</div>
+							{inlineCard}
+						</DarkShimmer>
+					)}
+
+					{tab === "nested" && (
+						<>
+							<DarkShimmer loading={loading} animation={animation}>
+								{inlineCard}
+							</DarkShimmer>
+							<div style={fixedStyle}>
+								<DarkShimmer loading={loading} animation={animation}>
+									{fixedWidgetContent(
+										"Owns its <Shimmer>. Stays aligned no matter the scroll offset.",
+									)}
+								</DarkShimmer>
+							</div>
+						</>
+					)}
+
+					<div className={`fixed-hint ${tab === "force" ? "warn" : ""}`}>
+						{tab === "skip" && (
+							<>
+								✅ The widget pinned at the bottom-right has <strong>no</strong>{" "}
+								shimmer overlay. Open the console — one{" "}
+								<code>[shimmer-trace] Skipped 1 element(s)…</code> warning per
+								Master.
+							</>
+						)}
+						{tab === "force" && (
+							<>
+								⚠️ At scroll=0 the shimmer block aligns with the widget.{" "}
+								<strong>Scroll the page</strong> — the block stays attached to
+								the Master container and drifts away from the (still-fixed) real
+								widget. This is exactly the bug v1.2.0 prevents by default.
+							</>
+						)}
+						{tab === "nested" && (
+							<>
+								✅ Scroll the page — the shimmer stays glued to the fixed
+								widget. Two independent Masters, each in its own coordinate
+								space. Recommended pattern.
+							</>
+						)}
+					</div>
+				</>
+			)}
+		</>
+	);
+}
+
 // ─── App ─────────────────────────────────────────────────────────────────────
 
 const PulseShimmer = createShimmer({
@@ -445,6 +640,22 @@ export default function App() {
 						</div>
 					</div>
 				</PulseShimmer>
+			</div>
+
+			{/* ─── Demo 7: position:fixed handling ─── */}
+			<div className="demo-section">
+				<h2>
+					<code>position:fixed</code> / <code>sticky</code> — auto-skip +
+					workarounds
+				</h2>
+				<p className="demo-description">
+					A fixed/sticky child doesn&apos;t scroll with the Master container, so
+					any overlay block we compute for it drifts on scroll. v1.2.0 detects
+					this during the trace walk, silently skips the subtree, and emits one{" "}
+					<code>console.warn</code> per Master container. Two opt-ins exist —
+					toggle the widget below to explore them.
+				</p>
+				<FixedPosDemo animation={animation} loading={loading} />
 			</div>
 		</div>
 	);
