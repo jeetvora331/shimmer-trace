@@ -1,4 +1,6 @@
-import React, { useRef, useCallback, useState, useId, useMemo } from "react";
+'use client';
+
+import React, { useRef, useCallback, useState, useId, useMemo, useInsertionEffect } from "react";
 import { ShimmerProps, ShimmerRect, DEFAULTS } from "./types";
 import { ShimmerContext, useShimmerContext } from "./ShimmerContext";
 import { ShimmerOverlay } from "./ShimmerOverlay";
@@ -166,7 +168,7 @@ function MasterShimmer({
 		});
 	}, []);
 
-	React.useEffect(() => {
+	useInsertionEffect(() => {
 		injectStyles();
 	}, []);
 

@@ -1,19 +1,21 @@
-import { createContext, useContext, RefObject } from 'react';
-import { ShimmerRect, ShimmerConfig } from './types';
+"use client";
+
+import { createContext, useContext, RefObject } from "react";
+import { ShimmerRect, ShimmerConfig } from "./types";
 
 export interface ShimmerContextValue {
-  register: (id: string, rects: ShimmerRect[]) => void;
-  unregister: (id: string) => void;
-  /** Ref object (not .current) so Reporters always read a fresh value. */
-  masterRef: RefObject<HTMLElement | null>;
-  loading: boolean;
-  config: Required<ShimmerConfig>;
+	register: (id: string, rects: ShimmerRect[]) => void;
+	unregister: (id: string) => void;
+	/** Ref object (not .current) so Reporters always read a fresh value. */
+	masterRef: RefObject<HTMLElement | null>;
+	loading: boolean;
+	config: Required<ShimmerConfig>;
 }
 
 export const ShimmerContext = createContext<ShimmerContextValue | null>(null);
 
 export function useShimmerContext(): ShimmerContextValue | null {
-  return useContext(ShimmerContext);
+	return useContext(ShimmerContext);
 }
 
 /**
@@ -23,5 +25,5 @@ export function useShimmerContext(): ShimmerContextValue | null {
 export const IsShimmeringContext = createContext<boolean>(false);
 
 export function useIsShimmering(): boolean {
-  return useContext(IsShimmeringContext);
+	return useContext(IsShimmeringContext);
 }

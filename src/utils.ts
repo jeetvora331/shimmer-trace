@@ -1,10 +1,13 @@
 /**
- * Generates a unique key for cloned elements to prevent
- * React "missing key" warnings during loading state.
+ * Generates a deterministic key for cloned elements.
+ *
+ * Prefix already includes the parent Shimmer's `useId()` plus a positional
+ * index from the caller, so it is unique per render slot and stable across
+ * SSR + client hydration. No module-scope counter — that caused hydration
+ * mismatches and forced React to remount cloned children every render.
  */
-let counter = 0;
 export function generateShimmerKey(prefix: string = 'shimmer'): string {
-  return `${prefix}-clone-${++counter}`;
+  return prefix;
 }
 
 /**

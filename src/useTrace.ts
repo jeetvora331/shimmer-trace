@@ -1,3 +1,5 @@
+'use client';
+
 import { useLayoutEffect, useState, RefObject, useCallback } from 'react';
 import { ShimmerRect } from './types';
 import { FALLBACK_DIMENSIONS } from './utils';

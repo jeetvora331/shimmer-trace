@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Shimmer } from './Shimmer';
 import { ShimmerConfig, ShimmerProps, DEFAULTS } from './types';
