@@ -165,6 +165,12 @@ body {
   gap: 1rem;
 }
 
+@media (max-width: 600px) {
+  .form-row {
+    flex-direction: column;
+  }
+}
+
 .form-group {
   flex: 1;
   display: flex;
@@ -296,6 +302,29 @@ body {
 }
 
 /* ─── Flex layout demo ─── */
+.stat-row {
+  display: flex;
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .stat-row {
+    flex-direction: column;
+  }
+
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border);

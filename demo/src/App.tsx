@@ -183,18 +183,18 @@ function FlexLayoutDemo({
 			animation={animation}
 			baseColor="#1e1e3a"
 			highlightColor="#2d2d52"
-			style={{ display: "flex", gap: "1rem" }}
+			className="stat-row"
 		>
 			<div className="stat-card" style={{ flex: 1 }}>
-				<span className="stat-value">4,821</span>
+				<span className="stat-value">700</span>
 				<span className="stat-label">Total Users</span>
 			</div>
 			<div className="stat-card" style={{ flex: 1 }}>
-				<span className="stat-value">98.4%</span>
+				<span className="stat-value">99%</span>
 				<span className="stat-label">Uptime</span>
 			</div>
 			<div className="stat-card" style={{ flex: 1 }}>
-				<span className="stat-value">142ms</span>
+				<span className="stat-value">50ms</span>
 				<span className="stat-label">Avg Latency</span>
 			</div>
 		</Shimmer>
