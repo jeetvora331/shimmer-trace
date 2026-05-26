@@ -43,6 +43,9 @@ It renders your real component invisibly, traces every element's exact position 
 
 - **Auto-tracing** — Measures real DOM layout. No manual skeleton code.
 - **Zero CLS** — Container layout preserved. Default `preserveBackground` keeps card backgrounds, borders, and padding visible underneath the shimmer.
+- **Next.js App Router / RSC ready** — Ships with `'use client'` directive baked into the bundled output. Import directly from a Server Component without a wrapper.
+- **SSR-safe** — Deterministic clone keys across server and client. No hydration mismatch warnings, no remount of cloned children on every render.
+- **No first-frame FOUC** — Animation styles are injected via `useInsertionEffect` so keyframes land before the first paint.
 - **Synchronized animation** — One overlay, one wave. All skeletons animate in perfect sync.
 - **5 animation styles** — `wave`, `pulse`, `shine`, `glow`, `gradient`.
 - **Dummy data injection** — `dummyData` clones children with template props so skeletons render with realistic shape, no `data || fallback` ternaries in JSX.
@@ -68,6 +71,31 @@ pnpm add shimmer-trace
 ```
 
 **Peer dependencies:** React 18+
+
+---
+
+## Next.js App Router (RSC) usage
+
+`shimmer-trace` ships its bundled output with a top-of-file `'use client'` directive, so you can import `Shimmer` (or `ShimmerSuspense`, `createShimmer`) directly from a Server Component without crashing the build.
+
+```tsx
+// app/profile/page.tsx — Server Component, no 'use client' at the top
+import { Shimmer } from "shimmer-trace";
+
+export default function ProfilePage() {
+  return (
+    <Shimmer loading>
+      <UserCard />
+    </Shimmer>
+  );
+}
+```
+
+Notes:
+
+- The `<Shimmer>` boundary itself is a Client Component. Children you pass through it must also be renderable as Client Components if they use state, effects, or browser APIs.
+- The library uses `getBoundingClientRect`, `ResizeObserver`, and `useInsertionEffect`, all of which only run in the browser. There is no server-side measurement step — the skeleton appears after hydration.
+- Server Component children that suspend should be wrapped with `ShimmerSuspense` (see [Suspense](#shimmersuspense--suspense-native-loading) below).
 
 ---
 
@@ -435,19 +463,21 @@ Fine-tune what gets traced with data attributes:
 <div data-shimmer-ignore>Never shimmer this</div>
 ```
 
+`data-shimmer` is also the explicit opt-in for tracing `position: fixed` / `position: sticky` elements — the library skips those by default to avoid scroll drift. See [Known Limitations](#known-limitations) for the trade-off.
+
 ---
 
 ## How It Works
 
-1. **Render real DOM** — `Shimmer` renders children normally. With `preserveBackground` (default), CSS rules hide text (`color: transparent`) and media (`opacity: 0`) on leaf elements while keeping container backgrounds, borders, and padding fully visible. Layout stays identical — zero CLS.
+1. **Inject keyframes pre-paint** — On first mount, the library inserts its `@keyframes` and `preserveBackground` CSS rules into `document.head` via `useInsertionEffect`. This runs before any layout effect or paint, so the wave animation is live on the very first frame — no flash of unstyled (static) shimmer blocks.
 
-2. **Walk the DOM** — `useTrace` recursively traverses the container, collecting every traceable element: headings, paragraphs, images, inputs, buttons, and leaf nodes with visible dimensions.
+2. **Render real DOM** — `Shimmer` renders children normally. With `preserveBackground` (default), CSS rules hide text (`color: transparent`) and media (`opacity: 0`) on leaf elements while keeping container backgrounds, borders, and padding fully visible. Layout stays identical — zero CLS.
 
-3. **Measure everything** — Each element is measured with `getBoundingClientRect()` relative to the master container, capturing position, size, and computed `border-radius`.
+3. **Walk the DOM** — `useTrace` recursively traverses the container, collecting every traceable element: headings, paragraphs, images, inputs, buttons, and leaf nodes with visible dimensions.
 
-4. **Build the overlay** — One absolutely-positioned `<div>` is rendered per traced rect, sized and positioned to match exactly. For sweep animations (`wave`, `shine`), each block also gets a gradient layer that spans the full container width — the highlight sweeps across all blocks in perfect sync.
+4. **Measure everything** — Each element is measured with `getBoundingClientRect()` relative to the master container, capturing position, size, and computed `border-radius`.
 
-5. **ResizeObserver** — Container resize triggers an automatic re-trace, so the skeleton stays pixel-perfect on responsive layouts.
+5. **Build the overlay** — One absolutely-positioned `<div>` is rendered per traced rect, sized and positioned to match exactly. For sweep animations (`wave`, `shine`), each block also gets a gradient layer that spans the full container width — the highlight sweeps across all blocks in perfect sync.
 
 6. **Re-trace on resize** — `ResizeObserver` watches the container and re-measures on every resize, keeping skeletons accurate at any screen size.
 
@@ -479,6 +509,21 @@ import {
   useIsShimmering,
 } from "shimmer-trace";
 ```
+
+---
+
+## Known Limitations
+
+These are real edge cases the library does **not** currently handle gracefully. Worth knowing before you wrap something complex.
+
+- **React Portals are skipped silently.** `useTrace` walks the subtree of the Master container; anything rendered into a portal (e.g. `createPortal(<Modal/>, document.body)`) is mounted outside that subtree, so it never gets measured and never gets a shimmer block. Use `<Shimmer>` *inside* the portal target if you need it shimmered there.
+- **`position: fixed` / `position: sticky` children are auto-skipped.** Their coordinate space cannot follow the Master container during scroll, so the overlay block would drift. The library detects them during the trace walk and silently skips the entire subtree, emitting one `console.warn` per Master container (deduped via a `WeakSet`, so resize-driven re-traces never re-warn). The warning fires in production too — it's an actionable signal, not log noise. Two workarounds:
+  - **Recommended:** put a nested `<Shimmer>` *inside* the fixed element. The inner Master sits in the fixed coordinate space and aligns correctly.
+  - **Override:** add `data-shimmer` to the fixed element to force-trace it. The block will drift on scroll — you accept the trade-off.
+- **Heavily-transformed ancestors.** If an ancestor of the Master container has a CSS `transform`, the overlay sits inside the same transformed space and usually renders correctly. If a *descendant* has a transform that the rect math doesn't expect, the overlay block may not line up.
+- **Suspending Server Component children.** A Server Component that suspends inside `<Shimmer>` (without `ShimmerSuspense`) won't produce DOM for the library to measure, so the skeleton appears empty. Use `ShimmerSuspense` for the suspending boundary, or pass template data via `dummyData`.
+
+If you hit one of these in a real app, please open an issue with a reproduction.
 
 ---
 

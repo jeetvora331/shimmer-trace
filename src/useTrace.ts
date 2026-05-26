@@ -39,17 +39,60 @@ function isTraceable(el: Element): boolean {
 }
 
 /**
- * Recursively walks the DOM tree and collects all traceable elements.
+ * Detects elements whose coordinate space cannot follow the Master
+ * container during scroll. `position: fixed` and `position: sticky`
+ * both live in a different scroll context (viewport / nearest scroll
+ * container) than the Master, so any container-relative rect we compute
+ * for them becomes stale on the first scroll.
+ *
+ * Returning `true` here causes the entire subtree under `el` to be
+ * skipped, since descendants of a fixed/sticky element inherit the same
+ * broken coordinate space.
  */
-function collectTraceableElements(root: Element): Element[] {
-  const result: Element[] = [];
+function isViewportLocked(el: Element): boolean {
+  const pos = window.getComputedStyle(el).position;
+  return pos === 'fixed' || pos === 'sticky';
+}
+
+/**
+ * Tracks Master containers we've already warned about, so the
+ * console.warn fires once per container instead of on every resize-driven
+ * re-trace. WeakSet keeps the dedupe noise-free across container churn —
+ * a fresh Master gets one warning, period.
+ */
+const warnedContainers = new WeakSet<Element>();
+
+interface CollectResult {
+  traced: Element[];
+  skippedFixed: number;
+}
+
+/**
+ * Recursively walks the DOM tree and collects all traceable elements.
+ *
+ * Also reports how many elements were silently skipped because they used
+ * `position: fixed` / `position: sticky`. Users can override this skip
+ * by adding `data-shimmer` to the element, but the resulting overlay
+ * block will drift on scroll — that's their choice to make.
+ */
+function collectTraceableElements(root: Element): CollectResult {
+  const traced: Element[] = [];
+  let skippedFixed = 0;
 
   function walk(el: Element) {
     if (el.hasAttribute('data-shimmer-ignore')) return;
     if (el.hasAttribute('data-shimmer-reporter')) return; // Ignore nested reporters, they report their own rects
 
+    // `data-shimmer` is an explicit opt-in — trust the user and trace.
+    // Without it, fixed/sticky elements are skipped entirely (including
+    // their descendants, which share the broken coordinate space).
+    if (!el.hasAttribute('data-shimmer') && isViewportLocked(el)) {
+      skippedFixed += 1;
+      return;
+    }
+
     if (isTraceable(el)) {
-      result.push(el);
+      traced.push(el);
       return; // Don't recurse into traced elements
     }
 
@@ -62,7 +105,7 @@ function collectTraceableElements(root: Element): Element[] {
     walk(root.children[i]);
   }
 
-  return result;
+  return { traced, skippedFixed };
 }
 
 /**
@@ -126,9 +169,22 @@ function performTrace(
 ): ShimmerRect[] {
   const anchor = anchorRef?.current ?? container;
   const anchorRect = anchor.getBoundingClientRect();
-  const elements = collectTraceableElements(container);
+  const { traced, skippedFixed } = collectTraceableElements(container);
 
-  return elements
+  if (skippedFixed > 0 && !warnedContainers.has(container)) {
+    warnedContainers.add(container);
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[shimmer-trace] Skipped ${skippedFixed} element(s) with ` +
+        `position:fixed or position:sticky. Their coordinate space ` +
+        `cannot follow the Master container during scroll, so the overlay ` +
+        `block would drift. Render a nested <Shimmer> inside the fixed/sticky ` +
+        `element if you need a skeleton there, or add data-shimmer to opt in ` +
+        `(positioning may still drift on scroll).`,
+    );
+  }
+
+  return traced
     .map((el) => measureElement(el, anchorRect, globalBorderRadius))
     .filter((r): r is ShimmerRect => r !== null && r.width > 0 && r.height > 0);
 }
