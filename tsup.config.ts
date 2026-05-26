@@ -7,6 +7,7 @@ const USE_CLIENT_DIRECTIVE = `'use client';\n`;
 export default defineConfig({
   entry: ['src/index.ts'],
   format: ['esm', 'cjs'],
+  outExtension: ({ format }) => ({ js: format === 'cjs' ? '.cjs' : '.mjs' }),
   dts: true,
   sourcemap: true,
   clean: true,
@@ -18,7 +19,7 @@ export default defineConfig({
   // treats this package as a client component. Bundlers strip per-file
   // directives during bundling, so we re-add at the bundle level.
   async onSuccess() {
-    const files = ['dist/index.mjs', 'dist/index.js'];
+    const files = ['dist/index.mjs', 'dist/index.cjs'];
     await Promise.all(
       files.map(async (rel) => {
         const file = path.resolve(rel);
